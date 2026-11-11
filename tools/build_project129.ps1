@@ -46,9 +46,15 @@ foreach ($Source in @("src/main.c", "src/entry.asm", "src/boot/main.asm")) {
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
 Write-Host "[P129 BUILD] ZCC=$Zcc"
-& $Zcc +zx -vn -O2 -compiler=sdcc --no-crt -zorg=24576 -m -o (Join-Path $BuildDir "P129BOOT") -bn $Resident src/entry.asm src/main.c
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -zorg=24576 -m -bn $Resident src/entry.asm src/main.c
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
-if (-not (Test-Path $Resident)) { throw "Z88DK did not create $Resident" }
+if (-not (Test-Path $Resident)) {
+    $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+    if ($Candidates.Count -gt 0) {
+        throw "Z88DK output name mismatch. Expected $Resident; found: $($Candidates -join ", ")"
+    }
+    throw "Z88DK returned success but produced no P129BOOT output. Review the verbose ZCC commands above."
+}
 $ResidentSize = (Get-Item $Resident).Length
 if ($ResidentSize -le 0 -or $ResidentSize -gt 16384) {
     throw "Bootstrap resident image has invalid size: $ResidentSize bytes"
