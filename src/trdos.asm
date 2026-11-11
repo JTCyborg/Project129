@@ -32,22 +32,16 @@ _p129_trdos_preload:
         ld      hl,0C800h
         ld      (p129_trdos_buffer_ptr),hl
 
-        ; Re-arm permanent DOSEN through the documented TR-DOS trampoline.
-        ; This is required because the UI is initialized before storage.
-        ld      bc,p129_trdos_rom_ready
-        push    bc
-        ld      bc,02A53h
-        push    bc
-        ld      bc,00177h
-        ld      a,0C6h
-        jp      03D2Fh
+        ; UI initialization has already executed the documented #0177/#3D2F
+        ; DOSEN setup and selected W0=#BF. Project127 calls #3D13 directly
+        ; after that setup; do not invoke #3D2F a second time here.
 
-p129_trdos_rom_ready:
-        ; Re-establish the complete fixed resident map after #3D2F.
+p129_trdos_map_ready:
+        ; Re-establish the complete fixed resident map after UI initialization.
         ; W0=#BF selects the DOSEN-controlled TR-DOS ROM; W1=P5 contains
         ; this executing resident image; W2=P2 contains the live/scratch
         ; stacks; W3=P0 contains the #C800 directory staging buffer.
-        ; Explicitly restore W1/W2 as #3D2F and UI setup may alter shadow state.
+        ; Explicitly restore the resident code and stack windows before ROM entry.
         ld      a,0BFh
         ld      bc,03FF7h
         out     (c),a
