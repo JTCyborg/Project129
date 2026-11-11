@@ -42,7 +42,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.22-PHYSICAL-W3-MAPPER"
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.23-PHYSICAL-PAGE-COPY"
 foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
@@ -122,10 +122,12 @@ $MapAcceptMatch = [regex]::Match($MapText, '(?m)^_p129_map_txn_accept\s*=\s*\$([
 $MapRestoreMatch = [regex]::Match($MapText, '(?m)^_p129_map_restore_boot\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankEnterMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_enter\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankLeaveMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_leave\s*=\s*\$([0-9A-Fa-f]{4})')
+$PageCopyMatch = [regex]::Match($MapText, '(?m)^_p129_map_page_copy\s*=\s*\$([0-9A-Fa-f]{4})')
+$PageCopySelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_page_copy_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapHwWriteMatch = [regex]::Match($MapText, '(?m)^_p129_map_hw_write\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapHwSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_hw_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
-if (-not $MapInitMatch.Success -or -not $MapSelftestMatch.Success -or -not $MapPortMatch.Success -or -not $MapBeginMatch.Success -or -not $MapCommitMatch.Success -or -not $MapRollbackMatch.Success -or -not $MapAcceptMatch.Success -or -not $MapRestoreMatch.Success -or -not $BankEnterMatch.Success -or -not $BankLeaveMatch.Success -or -not $BankSelftestMatch.Success -or -not $MapHwWriteMatch.Success -or -not $MapHwSelftestMatch.Success) {
+if (-not $MapInitMatch.Success -or -not $MapSelftestMatch.Success -or -not $MapPortMatch.Success -or -not $MapBeginMatch.Success -or -not $MapCommitMatch.Success -or -not $MapRollbackMatch.Success -or -not $MapAcceptMatch.Success -or -not $MapRestoreMatch.Success -or -not $BankEnterMatch.Success -or -not $BankLeaveMatch.Success -or -not $BankSelftestMatch.Success -or -not $MapHwWriteMatch.Success -or -not $MapHwSelftestMatch.Success -or -not $PageCopyMatch.Success -or -not $PageCopySelftestMatch.Success) {
     throw "Software page mapper API symbols are missing from $MapFile"
 }
 if (-not $MemoryInitMatch.Success -or -not $MemorySelftestMatch.Success -or -not $MemoryAllocMatch.Success -or -not $MemoryFreeMatch.Success -or -not $MemoryPinMatch.Success -or -not $MemoryUnpinMatch.Success -or -not $MemoryReserveMatch.Success -or -not $MemoryRefcountMatch.Success -or -not $MemoryReservedMatch.Success -or -not $MemoryAllocatedMatch.Success -or -not $MemoryFreeCountMatch.Success) {
@@ -152,7 +154,7 @@ if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
     throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
 $MemoryAddresses = @($MemoryInitMatch, $MemorySelftestMatch, $MemoryAllocMatch, $MemoryFreeMatch, $MemoryPinMatch, $MemoryUnpinMatch, $MemoryReserveMatch, $MemoryRefcountMatch, $MemoryReservedMatch, $MemoryAllocatedMatch, $MemoryFreeCountMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
-$MapAddresses = @($MapInitMatch, $MapSelftestMatch, $MapPortMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch, $BankEnterMatch, $BankLeaveMatch, $BankSelftestMatch, $MapHwWriteMatch, $MapHwSelftestMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
+$MapAddresses = @($MapInitMatch, $MapSelftestMatch, $MapPortMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch, $BankEnterMatch, $BankLeaveMatch, $BankSelftestMatch, $MapHwWriteMatch, $MapHwSelftestMatch, $PageCopyMatch, $PageCopySelftestMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
 foreach ($MapAddress in $MapAddresses) {
     if ($MapAddress -lt 0x6000 -or $MapAddress -ge (0x6000 + $ResidentSize)) {
         throw ("Software mapper API entry point is outside the loaded resident image: #{0:X4}" -f $MapAddress)

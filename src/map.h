@@ -31,4 +31,7 @@ uint8_t p129_map_w3_bank_depth(void);
 uint8_t p129_map_w3_bank_selftest(void);
 uint8_t p129_map_w3_hw_selftest(void);
 
+uint8_t p129_map_page_copy(uint8_t src_page, uint16_t src_offset, uint8_t dst_page, uint16_t dst_offset, uint16_t length);
+uint8_t p129_map_page_copy_selftest(void);
+
 #endif
