@@ -37,6 +37,39 @@ static void debug_hex8(uint8_t value)
     debug_putc((uint8_t)(digit < 10 ? '0' + digit : 'A' + digit - 10));
 }
 
+
+static void trdos_print_catalogue(void)
+{
+    uint16_t offset;
+    uint8_t i;
+    uint8_t end;
+    uint8_t type;
+    uint8_t first;
+    uint8_t ch;
+
+    debug_puts("[TR-DOS] CATALOGUE FILES\r\n");
+    for (offset = 0; offset < 2048; offset += 16) {
+        first = p129_catalogue[offset];
+        type = p129_catalogue[offset + 8];
+        if (first == 0 || first == 1) continue;
+        if (type != 'B' && type != 'C' && type != 'D' && type != '#') continue;
+
+        end = 8;
+        while (end && p129_catalogue[offset + end - 1] == ' ') --end;
+        debug_puts("  ");
+        for (i = 0; i < end; ++i) {
+            ch = p129_catalogue[offset + i];
+            if (ch < 32 || ch > 126) ch = '?';
+            debug_putc(ch);
+        }
+        if (end) {
+            debug_putc('.');
+            debug_putc(type);
+        }
+        debug_puts("\r\n");
+    }
+}
+
 static uint8_t trdos_count_entries(void)
 {
     uint16_t offset;
@@ -62,7 +95,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.6-TRDOS-ASM-CALLER\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.7-UI-CATALOGUE\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -89,6 +122,7 @@ void p129_c_entry(void)
     debug_hex8(files);
     debug_puts("\r\n");
     debug_puts("[P129] TR-DOS CATALOGUE PRELOADED\r\n");
+    trdos_print_catalogue();
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     for (;;) {}

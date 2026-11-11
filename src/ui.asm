@@ -415,4 +415,4 @@ p129_ui_print_row: db 0
 p129_ui_print_col: db 0
 p129_ui_title: db "PROJECT129 | ATM TURBO 2+ | SYSTEM CORE",0
 p129_ui_subtitle: db "SYSTEM STARTUP / HARDWARE DIAGNOSTICS",0
-p129_ui_status: db "TR-DOS: PENDING | MEMORY: PENDING | DEVICES: PENDING",0
+p129_ui_status: db "TR-DOS: READY | MEMORY: -- | DEVICES: --",0
