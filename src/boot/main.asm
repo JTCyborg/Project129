@@ -39,7 +39,7 @@ l20:
         DB      RANDOMIZE,USR,"15619",#0E,#00,#00
         DW      15619
         DB      0,#3A,REM,#3A
-        DB      "LOAD ",34,"P129BOOT",34," CODE 24576",#0D
+        DB      "LOAD ",34,"p129boot",34," CODE 24576",#0D
 l20_end:
 
         DB      0,21
@@ -55,9 +55,7 @@ l21_end:
         DB      0,30
         DW      l30_end-l30
 l30:
-        DB      OUT_CMD,"239",#0E,#00,#00,#EF,#00,#00,","
-        DB      "2",#0E,#00,#00,#02,#00,#00,":"
-        DB      RANDOMIZE,USR,VAL,34,"24576",34,#0D
+        DB      RANDOMIZE,USR,"24576",#0E,#00,#00,#60,#00,#00,#0D
 l30_end:
         DB      #80
 basic_loader_end:
