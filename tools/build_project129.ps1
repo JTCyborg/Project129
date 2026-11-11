@@ -74,9 +74,15 @@ if (-not $EntryMatch.Success -or [Convert]::ToInt32($EntryMatch.Groups[1].Value,
     throw "Invalid resident entry origin. Expected _p129_entry=#6000; inspect $MapFile"
 }
 if (-not $CEntryMatch.Success) { throw "C entry symbol _p129_c_entry is missing from $MapFile" }
+$TrdosMatch = [regex]::Match($MapText, '(?m)^_p129_trdos_preload\\s*=\\s*\\$([0-9A-Fa-f]{4})')
+if (-not $TrdosMatch.Success) { throw "TR-DOS preload symbol _p129_trdos_preload is missing from $MapFile" }
+$TrdosAddress = [Convert]::ToInt32($TrdosMatch.Groups[1].Value, 16)
 $CEntryAddress = [Convert]::ToInt32($CEntryMatch.Groups[1].Value, 16)
 if ($CEntryAddress -lt 0x6000 -or $CEntryAddress -ge (0x6000 + $ResidentSize)) {
     throw ("C entry is outside the loaded resident image: #{0:X4}" -f $CEntryAddress)
+}
+if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
+    throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
 $ResidentBytes = [System.IO.File]::ReadAllBytes($Resident)
 $CallFound = $false
@@ -87,7 +93,7 @@ for ($i = 0; $i -lt ($ResidentBytes.Length - 2); $i++) {
     }
 }
 if (-not $CallFound) { throw ("No CALL to linked C entry #{0:X4} found in resident binary" -f $CEntryAddress) }
-Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress)
+Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} TRDOS_PRELOAD=#{2:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress, $TrdosAddress)
 Write-Host "[P129 BUILD] RESIDENT=p129boot.C LOAD=#6000 SIZE=$ResidentSize"
 Write-Host "[P129 BUILD] LINK_MAP=$([System.IO.Path]::ChangeExtension($Resident, '.map'))"
 Write-Host "[P129 BUILD] LINK_SYMBOLS=$([System.IO.Path]::ChangeExtension($Resident, '.sym'))"
