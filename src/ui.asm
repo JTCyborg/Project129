@@ -6,6 +6,10 @@
 SECTION CODE
 PUBLIC _p129_ui_init
 PUBLIC _p129_ui_putc
+PUBLIC _p129_ui_clock_update
+EXTERN _p129_rtc_hour
+EXTERN _p129_rtc_minute
+EXTERN _p129_rtc_second
 
 P129_UI_PAGE7 EQU 078h
 P129_UI_PAGE3 EQU 07Ch
@@ -402,6 +406,38 @@ p129_ui_restore_pages:
         out     (c),a
         ret
 
+ ; Update the fixed status panel clock from the DS12887 ASCII buffers.
+_p129_ui_clock_update:
+        push    af
+        push    bc
+        push    de
+        push    hl
+        ld      a,(_p129_rtc_hour)
+        ld      (p129_ui_clock_digits),a
+        ld      a,(_p129_rtc_hour+1)
+        ld      (p129_ui_clock_digits+1),a
+        ld      a,(_p129_rtc_minute)
+        ld      (p129_ui_clock_digits+3),a
+        ld      a,(_p129_rtc_minute+1)
+        ld      (p129_ui_clock_digits+4),a
+        ld      a,(_p129_rtc_second)
+        ld      (p129_ui_clock_digits+6),a
+        ld      a,(_p129_rtc_second+1)
+        ld      (p129_ui_clock_digits+7),a
+        ld      hl,p129_ui_clock_label
+        ld      a,2
+        ld      c,1
+        call    p129_ui_print_at
+        ld      hl,p129_ui_clock_digits
+        ld      a,2
+        ld      c,18
+        call    p129_ui_print_at
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ret
+
 p129_ui_row: db 0
 p129_ui_col: db 0
 p129_ui_char: db 0
@@ -414,5 +450,7 @@ p129_ui_text_ptr: dw 0
 p129_ui_print_row: db 0
 p129_ui_print_col: db 0
 p129_ui_title: db "PROJECT129 | ATM TURBO 2+ | SYSTEM CORE",0
+p129_ui_clock_label: db "REAL TIME CLOCK:",0
+p129_ui_clock_digits: db "??:??:??",0
 p129_ui_subtitle: db "SYSTEM STARTUP / HARDWARE DIAGNOSTICS",0
 p129_ui_status: db "TR-DOS: READY | MEMORY: -- | DEVICES: --",0
