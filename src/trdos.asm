@@ -2,7 +2,7 @@
 ; Read-only mirror of the proven Project127 ROM call contract:
 ;   ROM entry #3D13, E=zero-based sector, HL=destination, B=1, C=5.
 ; Reads track 0 sectors 1..8 into the host W3/page-0 buffer at #C800.
-; No disk writes, paging OUT, IM or EI are performed here.
+; No disk writes, IM or EI are performed here.
 
 SECTION CODE
 PUBLIC _p129_trdos_preload
@@ -32,10 +32,8 @@ _p129_trdos_preload:
         ld      hl,0C800h
         ld      (p129_trdos_buffer_ptr),hl
 
-        ; UI initialization has already opened the ATM shadow ports. Re-arm
-        ; the documented permanent DOSEN/TR-DOS ROM path immediately before
-        ; entering the TR-DOS sector reader. This is the same #0177/#3D2F
-        ; restoration sequence used by Project127 after DS12887 access.
+        ; Re-arm permanent DOSEN through the documented TR-DOS trampoline.
+        ; This is required because the UI is initialized before storage.
         ld      bc,p129_trdos_rom_ready
         push    bc
         ld      bc,02A53h
@@ -45,6 +43,16 @@ _p129_trdos_preload:
         jp      03D2Fh
 
 p129_trdos_rom_ready:
+        ; Restore the complete Project127 TR-DOS access mapping, not just
+        ; DOSEN: W0=#BF selects the DOSEN-controlled low ROM (TR-DOS), and
+        ; W3=#7F selects RAM page 0 for the directory buffer at #C800.
+        ld      a,0BFh
+        ld      bc,03FF7h
+        out     (c),a
+        ld      a,07Fh
+        ld      bc,0FFF7h
+        out     (c),a
+
 p129_trdos_read_sector:
         ld      a,(p129_trdos_sector)
         cp      8
