@@ -50,7 +50,7 @@ p129_ui_ports_open:
         out     (c),a
 
         ; ATM RG6 text mode trampoline, identical to Project127 reference.
-        ld      hl,0FFEC
+        ld      hl,0FFECh
         ld      (hl),001h
         inc     hl
         ld      (hl),077h
@@ -67,7 +67,7 @@ p129_ui_ports_open:
         inc     hl
         ld      (hl),p129_ui_mode_ready >> 8
         ld      a,0C6h
-        jp      0FFEC
+        jp      0FFECh
 
 p129_ui_mode_ready:
         call    p129_ui_restore_pages
