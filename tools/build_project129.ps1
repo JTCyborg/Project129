@@ -42,7 +42,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.26-FAT16-BPB-DIAGNOSTICS"
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.27-FAT12-FAT16-LOADER"
 foreach ($Source in @("src/main.c", "src/fat16.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
