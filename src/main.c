@@ -7,6 +7,7 @@ volatile uint8_t p129_ui_ready;
 static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
 static p129_bank_module_t p129_loaded_module;
 static uint32_t p129_loaded_module_size;
+static uint8_t p129_bank_storage_ready;
 
 extern volatile uint8_t p129_trdos_result;
 extern void p129_ui_init(void);
@@ -355,7 +356,7 @@ void p129_c_entry(void)
     }
 
     /* Load a real DOS file into the banked physical-page module store. */
-    if (p129_hdd_present && p129_hdd_sector_valid &&
+    if (p129_bank_storage_ready && p129_hdd_present && p129_hdd_sector_valid &&
         p129_memory_free_count() != 0u) {
         static const char io_sys_name[11] = {'I','O',' ',' ',' ',' ',' ',' ','S','Y','S'};
         uint8_t load_status;
