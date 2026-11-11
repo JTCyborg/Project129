@@ -61,7 +61,8 @@ void p129_c_entry(void)
     uint16_t result;
     uint8_t files;
 
-    p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */\n    debug_puts("[P129] C IMAGE EXECUTED\r\n");
+    p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
+    debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
     debug_puts("[P129] BUILD: BOOTSTRAP-0.3.0-UI-FIRST\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
