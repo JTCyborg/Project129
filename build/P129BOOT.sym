@@ -1,0 +1,2 @@
+_p129_entry                     = $0000 ; addr, public, , , CODE, src/entry.asm:9
+p129_idle                       = $002C ; addr, local, , , CODE, src/entry.asm:34

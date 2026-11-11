@@ -1,0 +1,11 @@
+_p129_trdos_preload             = $0000 ; addr, public, , , CODE, src/trdos.asm:10
+p129_trdos_buffer_ptr           = $00B5 ; addr, local, , , CODE, src/trdos.asm:121
+p129_trdos_io_error             = $00B8 ; addr, local, , , CODE, src/trdos.asm:123
+p129_trdos_io_status            = $00B9 ; addr, local, , , CODE, src/trdos.asm:124
+p129_trdos_read_complete        = $008D ; addr, local, , , CODE, src/trdos.asm:88
+p129_trdos_read_failed          = $0093 ; addr, local, , , CODE, src/trdos.asm:93
+p129_trdos_read_sector          = $0027 ; addr, local, , , CODE, src/trdos.asm:35
+p129_trdos_restore              = $0098 ; addr, local, , , CODE, src/trdos.asm:97
+p129_trdos_result               = $00BA ; addr, local, , , CODE, src/trdos.asm:125
+p129_trdos_saved_sp             = $00B3 ; addr, local, , , CODE, src/trdos.asm:120
+p129_trdos_sector               = $00B7 ; addr, local, , , CODE, src/trdos.asm:122
