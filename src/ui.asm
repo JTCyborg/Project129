@@ -466,7 +466,7 @@ p129_ui_clock_done:
 _p129_ui_lease_state:
 p129_ui_lease_state: db 0
 
-__p129_ui_quiesce:
+_p129_ui_quiesce:
         ld      a,(p129_ui_lease_state)
         cp      1
         jp      nz,p129_ui_lease_reject
