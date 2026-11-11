@@ -62,7 +62,7 @@ p129_kbd_init_done:
 
 ; A=2 or A=3. Carry indicates handshake failure.
 p129_kbd_set_mode:
-        ld      (_p129_kbd_requested_mode),a
+        ld      (_p129_keyboard_requested_mode),a
         ld      bc,#55FE
         in      a,(c)
         cp      #AA
