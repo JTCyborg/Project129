@@ -504,6 +504,7 @@ _p129_ui_resume:
 
 p129_ui_lease_reject:
         ld      a,1
+        or      a               ; Return A=1 with Z=0 for the caller's status test.
         ret
 
 ; Validate legal transitions and invalid-order rejection; leave UI ACTIVE.
@@ -539,6 +540,7 @@ _p129_ui_lease_selftest:
         or      a
         jp      z,p129_ui_lease_test_fail
         xor     a
+        ld      l,a             ; Z88DK uint8_t return value is in L.
         ret
 p129_ui_lease_test_fail:
         ; Best-effort recovery to ACTIVE after an unexpected transition result.
@@ -549,6 +551,7 @@ p129_ui_lease_test_fail:
         cp      2
         call    z,_p129_ui_resume
         ld      a,1
+        ld      l,a             ; Z88DK uint8_t return value is in L.
         ret
 
 p129_ui_row: db 0
