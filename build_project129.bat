@@ -9,12 +9,19 @@ echo [BUILD] Script: tools\build_project129.ps1
 echo [BUILD] Output: disk_A.trd
 echo.
 
+set "ZCC=zcc"
 where zcc >nul 2>nul
 if errorlevel 1 (
-    echo [ERROR] Z88DK zcc was not found in PATH.
-    echo [ERROR] Install Z88DK and add its bin directory to PATH.
-    goto :failed
+    if exist "C:\z88dk\bin\zcc.exe" (
+        set "ZCC=C:\z88dk\bin\zcc.exe"
+    ) else (
+        echo [ERROR] Z88DK zcc was not found.
+        echo [ERROR] Checked PATH and C:\z88dk\bin\zcc.exe.
+        echo [ERROR] Set ZCC to the full path of zcc.exe or add Z88DK bin to PATH.
+        goto :failed
+    )
 )
+echo [BUILD] ZCC=%ZCC%
 
 if exist "tools\sjasmplus.exe" (
     set "SJASMPLUS=.\tools\sjasmplus.exe"
@@ -35,7 +42,7 @@ if not exist "tools\build_project129.ps1" (
 
 if not exist "build" mkdir "build"
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "tools\build_project129.ps1" -SjAsmPlus "%SJASMPLUS%"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "tools\build_project129.ps1" -Zcc "%ZCC%" -SjAsmPlus "%SJASMPLUS%"
 if errorlevel 1 goto :failed
 
 if not exist "disk_A.trd" (
