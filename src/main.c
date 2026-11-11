@@ -305,11 +305,11 @@ void p129_c_entry(void)
                 debug_puts("[MAP] W3 TRANSACTION COMMIT/ROLLBACK/PIN PASS\r\n");
                 result = p129_map_w3_lease_selftest();
                 if (result == 0u) {
-                    debug_puts("[MAP] W3 UI LEASE / PAGE PIN / RESTORE PASS\\r\\n");
+                    debug_puts("[MAP] W3 UI LEASE / PAGE PIN / RESTORE PASS\r\n");
                 } else {
                     debug_puts("[MAP] W3 UI LEASE FAILED; TEST=");
                     debug_hex8((uint8_t)result);
-                    debug_puts("\\r\\n");
+                    debug_puts("\r\n");
                 }
             } else {
                 debug_puts("[MAP] TRANSACTION SELFTEST FAILED; TEST=");
