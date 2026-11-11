@@ -289,7 +289,7 @@ p129_hdd_fat_name_base_loop:
 p129_hdd_fat_name_base_done:
         ld      a,(p129_hdd_fat_name_len)
         or      a
-        jr      z,p129_hdd_fat_emit_done
+        jp      z,p129_hdd_fat_emit_done
 
         ; Copy non-space extension bytes to a temporary 3-byte buffer.
         ld      hl,(p129_hdd_fat_entry_ptr)
