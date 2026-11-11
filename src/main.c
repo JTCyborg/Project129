@@ -18,6 +18,7 @@ extern volatile char p129_rtc_minute[2];
 extern volatile char p129_rtc_second[2];
 extern void p129_hdd_probe(void);
 extern void p129_hdd_list_root(void);
+extern uint8_t p129_range_selftest(void);
 extern volatile uint8_t p129_hdd_present;
 extern volatile uint8_t p129_hdd_sector_valid;
 extern volatile uint8_t p129_hdd_error;
@@ -114,7 +115,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.10-FAT16-ROOT\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.11-UINT32-RANGE\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -192,6 +193,17 @@ void p129_c_entry(void)
         debug_puts(" STATUS=");
         debug_hex8(p129_hdd_last_status);
         debug_puts("\r\n");
+    }
+    debug_puts("[RANGE] UINT32 API SELFTEST BEGIN\\r\\n");
+    {
+        uint8_t range_error = p129_range_selftest();
+        if (range_error == 0) {
+            debug_puts("[RANGE] UINT32 API SELFTEST PASS; LIMIT=00100000\\r\\n");
+        } else {
+            debug_puts("[RANGE] UINT32 API SELFTEST FAILED; TEST=");
+            debug_hex8(range_error);
+            debug_puts("\\r\\n");
+        }
     }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
