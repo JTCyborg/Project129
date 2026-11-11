@@ -316,8 +316,8 @@ void p129_c_entry(void)
                         if (result == 0u) {
                             debug_puts("[BANK] NESTED W3 ENTER/LEAVE / PAGE PIN / RESTORE PASS\r\n");
                             result = p129_map_page_copy_selftest();
-                            if (result == 0u) debug_puts("[MEM] PHYSICAL PAGE COPY / OVERLAP PASS\\r\\n");
-                            else { debug_puts("[MEM] PHYSICAL PAGE COPY FAILED; TEST="); debug_hex8(result); debug_puts("\\r\\n"); }
+                            if (result == 0u) debug_puts("[MEM] PHYSICAL PAGE COPY / OVERLAP PASS\r\n");
+                            else { debug_puts("[MEM] PHYSICAL PAGE COPY FAILED; TEST="); debug_hex8(result); debug_puts("\r\n"); }
                         } else {
                             debug_puts("[BANK] NESTED W3 SELFTEST FAILED; TEST=");
                             debug_hex8((uint8_t)result);
