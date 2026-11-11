@@ -16,6 +16,7 @@
 SECTION CODE
 PUBLIC _p129_hdd_probe
 PUBLIC _p129_hdd_present
+PUBLIC _p129_hdd_sector_valid
 PUBLIC _p129_hdd_error
 PUBLIC _p129_hdd_last_status
 PUBLIC _p129_hdd_capacity
@@ -39,6 +40,7 @@ _p129_hdd_probe:
         push    ix
         xor     a
         ld      (_p129_hdd_present),a
+        ld      (_p129_hdd_sector_valid),a
         ld      (_p129_hdd_error),a
         ld      (_p129_hdd_last_status),a
 
@@ -110,9 +112,17 @@ p129_hdd_identify_loop:
         ld      bc,4
         ldir
 
+        ; IDENTIFY succeeded: the ATA device is present even if no BPB exists.
+        ld      a,1
+        ld      (_p129_hdd_present),a
+
         ; Read the first legacy partition boot sector (absolute LBA 63).
         call    p129_hdd_read_lba63
-        jr      c,p129_hdd_probe_done
+        jr      nc,p129_hdd_sector_read_ok
+        ld      a,7
+        ld      (_p129_hdd_error),a
+        jr      p129_hdd_probe_done
+p129_hdd_sector_read_ok:
         ld      a,(p129_hdd_sector+11)
         or      a
         jr      nz,p129_hdd_bad_bpb
@@ -126,7 +136,7 @@ p129_hdd_identify_loop:
         cp      0AAh
         jr      nz,p129_hdd_bad_signature
         ld      a,1
-        ld      (_p129_hdd_present),a
+        ld      (_p129_hdd_sector_valid),a
         xor     a
         ld      (_p129_hdd_error),a
         jr      p129_hdd_probe_done
@@ -301,6 +311,7 @@ p129_hdd_complete_ok:
         ret
 
 _p129_hdd_present:     db 0
+_p129_hdd_sector_valid: db 0
 _p129_hdd_error:       db 0
 _p129_hdd_last_status: db 0
 _p129_hdd_capacity:    db 0,0,0,0
