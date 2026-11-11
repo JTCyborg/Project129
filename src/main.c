@@ -131,6 +131,32 @@ void p129_c_entry(void)
     debug_puts("\r\n");
     debug_puts("[P129] TR-DOS CATALOGUE PRELOADED\r\n");
     trdos_print_catalogue();
+
+    debug_puts("[RTC] DS12887 PROBE BEGIN (GLUK/SMUC)\r\n");
+    p129_rtc_probe();
+    if (p129_rtc_available) {
+        p129_rtc_read_current();
+        p129_ui_clock_update();
+        if (p129_rtc_hour[0] == '?') {
+            debug_puts("[RTC] DS12887 ONLINE; TIME READ FAILED\r\n");
+        } else {
+            debug_puts("[RTC] DS12887 ONLINE; BACKEND=");
+            debug_puts(p129_rtc_backend ? "SMUC" : "GLUK");
+            debug_puts("; TIME=");
+            debug_putc((uint8_t)p129_rtc_hour[0]);
+            debug_putc((uint8_t)p129_rtc_hour[1]);
+            debug_putc(':');
+            debug_putc((uint8_t)p129_rtc_minute[0]);
+            debug_putc((uint8_t)p129_rtc_minute[1]);
+            debug_putc(':');
+            debug_putc((uint8_t)p129_rtc_second[0]);
+            debug_putc((uint8_t)p129_rtc_second[1]);
+            debug_puts("\r\n");
+        }
+    } else {
+        p129_ui_clock_update();
+        debug_puts("[RTC] DS12887 NOT DETECTED / INVALID STATUS\r\n");
+    }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     for (;;) {}
