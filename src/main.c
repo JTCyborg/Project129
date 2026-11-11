@@ -9,6 +9,7 @@ extern volatile uint8_t p129_trdos_result;
 extern void p129_ui_init(void);
 extern void p129_ui_putc(uint8_t value);
 extern void p129_ui_clock_update(void);
+extern uint8_t p129_ui_lease_selftest(void);
 extern void p129_rtc_probe(void);
 extern void p129_rtc_read_current(void);
 extern volatile uint8_t p129_rtc_available;
@@ -132,7 +133,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.18-SOFTWARE-PAGE-MAPPER\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.19-W3-UI-LEASE\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -142,6 +143,12 @@ void p129_c_entry(void)
     p129_ui_init();
     p129_ui_ready = 1;
     debug_puts("[P129] ATM RG6 80X25 UI READY\r\n");
+    debug_puts("[UI] W3 LEASE TRANSITIONS BEGIN\r\n");
+    if (p129_ui_lease_selftest() == 0u) {
+        debug_puts("[UI] ACTIVE/QUIESCED/HANDOFF/RESUME PASS\r\n");
+    } else {
+        debug_puts("[UI] W3 LEASE FAILED\r\n");
+    }
     result = p129_trdos_result;
     if (result != 0) {
         debug_puts("[TRDOS] DIRECTORY READ FAILED\r\n");
