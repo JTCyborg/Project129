@@ -16,6 +16,12 @@ extern volatile uint8_t p129_rtc_backend;
 extern volatile char p129_rtc_hour[2];
 extern volatile char p129_rtc_minute[2];
 extern volatile char p129_rtc_second[2];
+extern void p129_hdd_probe(void);
+extern volatile uint8_t p129_hdd_present;
+extern volatile uint8_t p129_hdd_sector_valid;
+extern volatile uint8_t p129_hdd_error;
+extern volatile uint8_t p129_hdd_last_status;
+extern volatile uint8_t p129_hdd_capacity[4];
 
 static void debug_putc(uint8_t value)
 {
@@ -107,7 +113,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.8-DS12887-RTC\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.9-NEMO-HDD\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -160,6 +166,30 @@ void p129_c_entry(void)
     } else {
         p129_ui_clock_update();
         debug_puts("[RTC] DS12887 NOT DETECTED / INVALID STATUS\r\n");
+    }
+    debug_puts("[HDD] NEMO IDE MASTER PROBE BEGIN\r\n");
+    p129_hdd_probe();
+    if (p129_hdd_present) {
+        debug_puts("[HDD] IDENTIFY DEVICE OK; LBA28 SECTORS=");
+        debug_hex8(p129_hdd_capacity[3]);
+        debug_hex8(p129_hdd_capacity[2]);
+        debug_hex8(p129_hdd_capacity[1]);
+        debug_hex8(p129_hdd_capacity[0]);
+        if (p129_hdd_sector_valid) {
+            debug_puts("\r\n[HDD] LBA 63 READ OK; BPB 512B; SIGNATURE 55AA\r\n");
+        } else {
+            debug_puts("\r\n[HDD] LBA 63 READ/BPB VALIDATION FAILED; ERROR=");
+            debug_hex8(p129_hdd_error);
+            debug_puts(" STATUS=");
+            debug_hex8(p129_hdd_last_status);
+            debug_puts("\r\n");
+        }
+    } else {
+        debug_puts("[HDD] PROBE FAILED; ERROR=");
+        debug_hex8(p129_hdd_error);
+        debug_puts(" STATUS=");
+        debug_hex8(p129_hdd_last_status);
+        debug_puts("\r\n");
     }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 

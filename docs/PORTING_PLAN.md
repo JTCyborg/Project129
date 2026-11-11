@@ -25,7 +25,9 @@ Project129 must bring up the ATM-native user interface immediately after the res
 1. Resident entry and C handoff (runtime-confirmed).
 2. ATM RG6 80x25 console initialization and status/log output.
 3. TR-DOS catalogue preload and directory handling.
-4. Remaining subsystems in the full Project127 scenario order below.
+4. DS12887 RTC read/display (SMUC path runtime-confirmed).
+5. Physical Nemo IDE/SMUC read-only bring-up (user-requested priority ahead of the remaining subsystems).
+6. Remaining subsystems in the full Project127 scenario order below.
 
 The UI uses the Project127/Project126 ATM text layout: character plane on page 7, attributes on page 3, 80 columns x 25 rows, 12 status rows and 13 scrolling log rows. UI output is mirrored to debug port #EF. No live IRQ is enabled by UI initialization.
 
@@ -35,7 +37,8 @@ The UI uses the Project127/Project126 ATM text layout: character plane on page 7
 - Bootstrap 0.3.7: ATM RG6 80x25 console and TR-DOS catalogue preload are runtime-confirmed. The user verified all eight sector reads, the 2048-byte directory snapshot, two catalogue entries (`boot.B`, `p129boot.C`), and visible UI/log output.
 - Bootstrap 0.3.8: a read-only DS12887 driver is implemented in `src/rtc.asm`. It probes native GLUK (`#EFF7/#DFF7/#BFF7`) first, falls back to SMUC (`#FFBA/#DFBA`), validates Status D/A, waits for UIP to clear, takes a stable seconds/minutes/hours/seconds snapshot, and converts BCD/binary plus 12/24-hour formats. It restores the DOSEN/RG6 state through the Project126 `#3D2F` / `#0177` trampoline after native GLUK access.
 - The ATM status panel now has a dedicated `REAL TIME CLOCK` field; `src/main.c` probes and reads the RTC after UI and TR-DOS catalogue startup, then publishes `HH:MM:SS` or `??:??:??`.
-- Bootstrap 0.3.8 RTC hardware detection, time read, and display are implemented but still require runtime confirmation from the user. Do not report DS12887 online until the emulator log confirms it.
+- Bootstrap 0.3.8 DS12887 detection and time read are runtime-confirmed by the user: `BACKEND=SMUC`, valid `HH:MM:SS` output (`19:16:36`). The native GLUK path and live on-screen second refresh still need separate confirmation.
+- Bootstrap 0.3.9: `src/hdd.asm` adds a read-only Nemo IDE/SMUC ATA PIO probe based on the Project127 LBA28 contract. It selects Master, performs IDENTIFY DEVICE (ECh), reads the 256-word IDENTIFY block through the low/high byte ports, captures the LBA28 sector count, reads the legacy partition boot sector at LBA 63 with READ SECTORS (20h), and validates 512-byte sectors plus the 55AA signature. It issues no WRITE or FLUSH commands and does not enable IRQs or change ATM paging. Runtime/build confirmation is pending.
 - The catalogue preload uses the same TR-DOS ROM contract as Project127: entry `#3D13`, track 0 sectors 1..8, destination `#C800..#CFFF`, scratch stack `#B7F0`, and error/status bytes `#5D0F/#5D10`.
 - Runtime confirmation of Bootstrap 0.3.0 UI startup is pending. Full W3 lease integration remains to be completed; do not report the UI ownership stage as complete.
 
@@ -71,7 +74,7 @@ The first milestone in Project129 intentionally implements only steps 1-2's boot
 9. Speaker/audio.
 10. Timer/event service and interrupt/dispatch foundation.
 
-A dependency-driven reorder requires a recorded reason and an explicit interface impact review.
+Project129 implementation-order exception (2026-11-11): the user explicitly requested physical HDD immediately after RTC, ahead of keyboard/speaker. This changes implementation priority only; it does not change the Project127 reference behavior or its eventual subsystem contracts.
 
 ## Architectural contracts
 
