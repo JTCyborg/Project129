@@ -4,7 +4,7 @@
 
 SECTION CODE
 PUBLIC _p129_entry
-EXTERN _main
+EXTERN _p129_c_entry
 
 _p129_entry:
         ld      a,'>'
@@ -24,7 +24,7 @@ _p129_entry:
         ld      a,'C'
         ld      bc,00EFh
         out     (c),a
-        call    _main
+        call    _p129_c_entry
 
 ; main() is expected to remain resident forever. Reaching this marker means
 ; the C entry returned unexpectedly, rather than failing before the call.
