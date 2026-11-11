@@ -18,12 +18,24 @@ Do not copy Project127 assembly modules into the Project129 executable. Use them
 
 The first Z88DK milestone is deliberately narrow: produce a valid TR-DOS image and prove the BASIC-to-C-entry handoff. Do not initialize video, RTC, keyboard, HDD or interrupt delivery in this milestone.
 
+## Revised implementation order (user decision, 2026-11-11)
+
+Project129 must bring up the ATM-native user interface immediately after the resident C entry and before storage, RTC, memory manager, mapper, IRQ, keyboard or disk services. The order is:
+
+1. Resident entry and C handoff (runtime-confirmed).
+2. ATM RG6 80x25 console initialization and status/log output.
+3. TR-DOS catalogue preload and directory handling.
+4. Remaining subsystems in the full Project127 scenario order below.
+
+The UI uses the Project127/Project126 ATM text layout: character plane on page 7, attributes on page 3, 80 columns x 25 rows, 12 status rows and 13 scrolling log rows. UI output is mirrored to debug port #EF. No live IRQ is enabled by UI initialization.
+
 ## Current implementation status (2026-11-11)
 
 - Bootstrap 0.1.0: BASIC/TR-DOS load, resident entry and Z88DK C handoff are runtime-confirmed by the user.
-- Bootstrap 0.2.0: read-only TR-DOS catalogue preload is implemented in `src/trdos.asm`; C validates the 128-entry, 2048-byte snapshot at `#C800` and reports the file count.
+- Bootstrap 0.3.0: ATM RG6 80x25 console module is implemented in `src/ui.asm`; C initializes it before invoking TR-DOS or any other service. Runtime confirmation is pending.
+- Read-only TR-DOS catalogue preload remains implemented in `src/trdos.asm`; it now follows UI startup and C validates the 128-entry, 2048-byte snapshot at `#C800`.
 - The catalogue preload uses the same TR-DOS ROM contract as Project127: entry `#3D13`, track 0 sectors 1..8, destination `#C800..#CFFF`, scratch stack `#B7F0`, and error/status bytes `#5D0F/#5D10`.
-- Runtime confirmation of Bootstrap 0.2.0 is pending. W3 ownership and ATM UI initialization are not yet implemented; do not report startup stage 2 as complete.
+- Runtime confirmation of Bootstrap 0.3.0 UI startup is pending. Full W3 lease integration remains to be completed; do not report the UI ownership stage as complete.
 
 ## Full Project127 startup scenario to preserve
 
