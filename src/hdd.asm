@@ -49,14 +49,14 @@ _p129_hdd_probe:
         in      a,(c)
         ld      (_p129_hdd_last_status),a
         cp      0FFh
-        jr      z,p129_hdd_no_device
+        jp      z,p129_hdd_no_device
 
         ; Select Master and wait for BSY=0, ERR=0, DRDY=1.
         ld      a,0E0h
         ld      bc,P129_HDD_PORT_DRIVE
         out     (c),a
         call    p129_hdd_wait_ready
-        jr      c,p129_hdd_not_ready
+        jp      c,p129_hdd_not_ready
 
         ; ATA IDENTIFY DEVICE.
         xor     a
@@ -75,13 +75,13 @@ _p129_hdd_probe:
         ld      bc,P129_HDD_PORT_COMMAND
         out     (c),a
         call    p129_hdd_wait_drq
-        jr      c,p129_hdd_identify_failed
+        jp      c,p129_hdd_identify_failed
 
         ; Non-zero LBA mid/high signatures indicate ATAPI, not ATA HDD.
         ld      bc,P129_HDD_PORT_LBA_MID
         in      a,(c)
         or      a
-        jr      nz,p129_hdd_not_ata
+        jp      nz,p129_hdd_not_ata
         ld      bc,P129_HDD_PORT_LBA_HIGH
         in      a,(c)
         or      a
