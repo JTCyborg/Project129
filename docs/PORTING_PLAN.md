@@ -27,7 +27,10 @@ Project129 must bring up the ATM-native user interface immediately after the res
 3. TR-DOS catalogue preload and directory handling.
 4. DS12887 RTC read/display (SMUC path runtime-confirmed).
 5. Physical Nemo IDE/SMUC read-only bring-up (user-requested priority ahead of the remaining subsystems).
-6. Remaining subsystems in the full Project127 scenario order below.
+6. UINT32 range/check API (implementation added; runtime confirmation pending).
+7. ATM-side keyboard/input (current implementation milestone; keyboard is deliberately moved ahead of speaker by the user's 2026-11-11 decision).
+8. ATM-side speaker output and the guest PIT/PPI-to-host audio path (after keyboard).
+9. Remaining memory, mapper, video, storage-service, timer/event and interrupt work, preserving Project127 contracts and dependencies.
 
 The UI uses the Project127/Project126 ATM text layout: character plane on page 7, attributes on page 3, 80 columns x 25 rows, 12 status rows and 13 scrolling log rows. UI output is mirrored to debug port #EF. No live IRQ is enabled by UI initialization.
 
@@ -41,6 +44,7 @@ The UI uses the Project127/Project126 ATM text layout: character plane on page 7
 - Bootstrap 0.3.9 Nemo IDE/SMUC probe is runtime-confirmed by the user: IDENTIFY returned LBA28 sector count `00004EC0`, and absolute LBA 63 was read successfully with 512-byte BPB and `55AA` signature. The transport is read-only and does not issue WRITE/FLUSH or change ATM paging.
 - Bootstrap 0.3.10 FAT16 root directory is runtime-confirmed by the user. The log shows `IO.SYS`, `MSDOS.SYS`, `DOS <DIR>`, `COMMAND.COM`, `WINA20.386`, `CONFIG.SYS`, `AUTOEXEC.BAT`, followed by `DIRECTORY READ OK` and `FILE COUNT=0007`. This confirms BPB-derived root-sector calculation, LBA28 reads and FAT16 8.3 root-entry parsing on the user's Nemo IDE disk. Nested directories, file contents and writes are not implemented.
 - Bootstrap 0.3.11 adds `src/range.c`: a UINT32 half-open physical-range validator bounded by 1 MiB, with overflow rejection and eight boundary regression cases. The resident startup reports PASS/FAILED before idle. Build-script source hashing, link inclusion and map-symbol/residency checks are added. Compile/runtime confirmation is pending.
+- Bootstrap 0.3.12 adds `src/keyboard.asm`, ported against the Project127 ATM_KBD contract: mode-2 state registers, mode-3 lastscan event, and ZX 8x5 matrix fallback if the ATM_KBD handshake fails. The resident loop polls and logs event/state changes on #EF; the build checks both keyboard entry points. Compile/runtime confirmation is pending. The ATM XT handshake path is not considered verified until the user confirms `[KBD] ATM XT ACTIVE` and key make/break logs; ZX fallback remains separately testable.
 - The catalogue preload uses the same TR-DOS ROM contract as Project127: entry `#3D13`, track 0 sectors 1..8, destination `#C800..#CFFF`, scratch stack `#B7F0`, and error/status bytes `#5D0F/#5D10`.
 - Runtime confirmation of Bootstrap 0.3.0 UI startup is pending. Full W3 lease integration remains to be completed; do not report the UI ownership stage as complete.
 
@@ -76,7 +80,7 @@ The first milestone in Project129 intentionally implements only steps 1-2's boot
 9. Speaker/audio.
 10. Timer/event service and interrupt/dispatch foundation.
 
-Project129 implementation-order exception (2026-11-11): the user explicitly requested physical HDD immediately after RTC, ahead of keyboard/speaker. This changes implementation priority only; it does not change the Project127 reference behavior or its eventual subsystem contracts.
+Project129 implementation-order exceptions (2026-11-11): physical HDD was explicitly moved immediately after RTC. The user has now specified keyboard next and speaker immediately after keyboard. These decisions change implementation priority only; they do not change Project127's reference contracts or the eventual subsystem behavior.
 
 ## Architectural contracts
 
