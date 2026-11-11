@@ -40,8 +40,9 @@ uint8_t p129_map_init(void)
     p129_map_txn_committed = 0u;
     p129_map_w3_lease_active = 0u;
     p129_map_bank_depth = 0u;
-    /* UI initialization has already opened ATM shadow ports via #3D2F/#0177. */
-    if (p129_map_hw_apply(0u) != 0u) return 3u;
+    /* UI initialization already leaves W3=P0 and keeps shadow ports open.
+     * Do not issue a page OUT while the UI still owns W3.
+     */
     p129_map_ready = 1u;
     return 0u;
 }
