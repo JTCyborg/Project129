@@ -133,13 +133,13 @@ p129_hdd_sector_read_ok:
         ld      a,(_p129_hdd_sector+11)
         or      a
         jr      nz,p129_hdd_bad_bpb
-        ld      a,(p129_hdd_sector+12)
+        ld      a,(_p129_hdd_sector+12)
         cp      2
         jr      nz,p129_hdd_bad_bpb
-        ld      a,(p129_hdd_sector+510)
+        ld      a,(_p129_hdd_sector+510)
         cp      055h
         jr      nz,p129_hdd_bad_signature
-        ld      a,(p129_hdd_sector+511)
+        ld      a,(_p129_hdd_sector+511)
         cp      0AAh
         jr      nz,p129_hdd_bad_signature
         ld      a,1
