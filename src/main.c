@@ -9,7 +9,7 @@
 volatile uint8_t p129_debug_value;
 static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
 
-extern uint16_t p129_trdos_preload(void);\nextern void p129_ui_init(void);\nstatic uint8_t p129_ui_ready;
+extern uint16_t p129_trdos_preload(void);\nextern void p129_ui_init(void);\nvolatile uint8_t p129_ui_ready;
 
 static void debug_putc(uint8_t value)
 {
@@ -19,7 +19,12 @@ static void debug_putc(uint8_t value)
         ld bc,00EFh
         out (c),a
     __endasm;
-}
+    if (p129_ui_ready) {
+        __asm
+            ld a,(_p129_debug_value)
+            call _p129_ui_putc
+        __endasm;
+    }
 
 static void debug_puts(const char *text)
 {
