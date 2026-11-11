@@ -126,7 +126,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.14-KEYBOARD-JUMP\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.15-KEYBOARD-TIMEOUT\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -223,7 +223,7 @@ void p129_c_entry(void)
         debug_puts("[KBD] ZX FALLBACK\r\n");
     }
 
-    debug_puts("[P129] KEYBOARD MONITOR\\r\\n");
+    debug_puts("[P129] KEYBOARD MONITOR\r\n");
     keyboard_idle_windows = 20; /* Project127: 41 windows ~= 10 s; 20 ~= 5 s. */
 
     /* Restart the inactivity window on every observed key transition. */
@@ -241,7 +241,7 @@ void p129_c_entry(void)
                 debug_hex8(p129_keyboard_r4);
                 debug_puts(" R5=");
                 debug_hex8(p129_keyboard_r5);
-                debug_puts("\\r\\n");
+                debug_puts("\r\n");
             } else {
                 uint8_t k;
                 debug_puts("[KBD] ZX MATRIX=");
@@ -249,15 +249,15 @@ void p129_c_entry(void)
                     debug_hex8(p129_keyboard_matrix[k]);
                     debug_putc(' ');
                 }
-                debug_puts("\\r\\n");
+                debug_puts("\r\n");
             }
         }
         p129_keyboard_delay_window();
         --keyboard_idle_windows;
         if (keyboard_idle_windows == 0) break;
     }
-    debug_puts("[KBD] DONE\\r\\n");
-    debug_puts("[P129] KEYBOARD COMPLETE; NEXT=SPEAKER\\r\\n");
+    debug_puts("[KBD] DONE\r\n");
+    debug_puts("[P129] KEYBOARD COMPLETE; NEXT=SPEAKER\r\n");
 
     rtc_poll_divider = 0;
     rtc_poll_phase = 0;
