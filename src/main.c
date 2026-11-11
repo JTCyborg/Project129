@@ -13,7 +13,7 @@ static void debug_putc(uint8_t value)
     p129_debug_value = value;
     __asm
         ld a,(_p129_debug_value)
-        ld bc,#0x00ef
+        ld bc,00EFh
         out (c),a
     __endasm;
 }
