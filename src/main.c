@@ -62,7 +62,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.3-TRDOS-DIRECT-ROM\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.4-TRDOS-ERRSP-GUARD\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* Interface is initialized first, before TR-DOS and other services. */
