@@ -466,13 +466,14 @@ p129_ui_clock_done:
 _p129_ui_lease_state:
 p129_ui_lease_state: db 0
 
-_p129_ui_quiesce:
+__p129_ui_quiesce:
         ld      a,(p129_ui_lease_state)
         cp      1
         jp      nz,p129_ui_lease_reject
         ld      a,2
         ld      (p129_ui_lease_state),a
         xor     a
+        ld      l,a             ; Preserve ASM A status and satisfy Z88DK C ABI.
         ret
 
 _p129_ui_handoff_begin:
@@ -482,6 +483,7 @@ _p129_ui_handoff_begin:
         ld      a,3
         ld      (p129_ui_lease_state),a
         xor     a
+        ld      l,a
         ret
 
 _p129_ui_handoff_end:
@@ -491,6 +493,7 @@ _p129_ui_handoff_end:
         ld      a,2
         ld      (p129_ui_lease_state),a
         xor     a
+        ld      l,a
         ret
 
 _p129_ui_resume:
@@ -500,11 +503,13 @@ _p129_ui_resume:
         ld      a,1
         ld      (p129_ui_lease_state),a
         xor     a
+        ld      l,a
         ret
 
 p129_ui_lease_reject:
         ld      a,1
-        or      a               ; Return A=1 with Z=0 for the caller's status test.
+        ld      l,a             ; Return failure in both A and Z88DK's L.
+        or      a               ; Preserve the ASM caller's Z=0 status test.
         ret
 
 ; Validate legal transitions and invalid-order rejection; leave UI ACTIVE.
