@@ -109,7 +109,7 @@ if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
 }
 foreach ($UiAddress in @($UiInitAddress, $UiPutcAddress, $UiClockAddress, $RtcProbeAddress, $RtcReadAddress, $HddProbeAddress, $HddListAddress, $RangeValidateAddress, $RangeSelftestAddress)) {
     if ($UiAddress -lt 0x6000 -or $UiAddress -ge (0x6000 + $ResidentSize)) {
-        throw ("UI/RTC entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
+        throw ("Resident API entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
     }
 }
 $ResidentBytes = [System.IO.File]::ReadAllBytes($Resident)
