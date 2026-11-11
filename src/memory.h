@@ -24,6 +24,7 @@ uint8_t p129_page_pin(uint8_t page);
 uint8_t p129_page_unpin(uint8_t page);
 uint8_t p129_page_refcount(uint8_t page);
 uint8_t p129_page_is_reserved(uint8_t page);
+uint8_t p129_page_is_allocated(uint8_t page);
 uint8_t p129_memory_free_count(void);
 
 #endif

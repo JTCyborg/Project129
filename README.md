@@ -24,7 +24,8 @@ The build uses Z88DK for the resident image and SjASMPlus for TR-DOS packaging. 
 - [x] Project127 boot contract and subsystem sequence recorded.
 - [ ] Z88DK resident entry and #EF diagnostic boot confirmed on ATM emulator.
 - [ ] UINT32 range/check API.
-- [ ] ATM physical-page allocator and memory operations.
+- [x] ATM physical-page allocator metadata and software W3 page-map transaction layer.
+- [ ] Physical ATM page switching, cross-page memory operations and W3/UI lease integration.
 - [ ] TR-DOS disk service.
 - [ ] ATM native video.
 - [ ] DS12887 RTC via SMUC.

@@ -26,6 +26,8 @@ extern void p129_speaker_test_tone(void);
 extern uint8_t p129_memory_init(void);
 extern uint8_t p129_memory_selftest(void);
 extern uint8_t p129_memory_free_count(void);
+extern uint8_t p129_map_init(void);
+extern uint8_t p129_map_selftest(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -130,7 +132,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.17-MEMORY-PAGE-ALLOCATOR\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.18-SOFTWARE-PAGE-MAPPER\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -273,7 +275,7 @@ void p129_c_entry(void)
         debug_puts("[MEM] INIT FAILED\r\n");
     } else {
         debug_puts("[MEM] MODEL=1M PAGES=64 PAGE_SIZE=16K\r\n");
-        debug_puts("[MEM] RESERVED=P2:STACK P3:ATTR P5:RESIDENT P7:CHAR\r\n");
+        debug_puts("[MEM] RESERVED=P0:BOOT-W3 P2:STACK P3:ATTR P5:RESIDENT P7:CHAR\r\n");
         debug_puts("[MEM] TOP-DOWN ALLOCATOR/PIN SELFTEST BEGIN\r\n");
         result = p129_memory_selftest();
         if (result == 0u) {
@@ -284,6 +286,20 @@ void p129_c_entry(void)
             debug_puts("[MEM] TOP-DOWN ALLOCATOR/PIN SELFTEST FAILED; TEST=");
             debug_hex8((uint8_t)result);
             debug_puts("\r\n");
+        }
+        debug_puts("[MAP] SOFTWARE PAGE MAP INIT BEGIN\r\n");
+        if (p129_map_init() != 0u) {
+            debug_puts("[MAP] INIT FAILED\r\n");
+        } else {
+            debug_puts("[MAP] W0=ROM W1=P5 W2=P2 W3=P0; PORT MODEL ONLY\r\n");
+            result = p129_map_selftest();
+            if (result == 0u) {
+                debug_puts("[MAP] W3 TRANSACTION COMMIT/ROLLBACK/PIN PASS\r\n");
+            } else {
+                debug_puts("[MAP] TRANSACTION SELFTEST FAILED; TEST=");
+                debug_hex8((uint8_t)result);
+                debug_puts("\r\n");
+            }
         }
     }
 

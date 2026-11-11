@@ -50,10 +50,11 @@ uint8_t p129_memory_init(void)
         p129_page_refs[page] = 0u;
     }
 
-    if (p129_page_reserve(2u) != 0u) return 1u; /* W2 stack/control */
-    if (p129_page_reserve(3u) != 0u) return 2u; /* video attributes */
-    if (p129_page_reserve(5u) != 0u) return 3u; /* W1 resident code/data */
-    if (p129_page_reserve(7u) != 0u) return 4u; /* video characters */
+    if (p129_page_reserve(0u) != 0u) return 1u; /* boot W3 mapping */
+    if (p129_page_reserve(2u) != 0u) return 2u; /* W2 stack/control */
+    if (p129_page_reserve(3u) != 0u) return 3u; /* video attributes */
+    if (p129_page_reserve(5u) != 0u) return 4u; /* W1 resident code/data */
+    if (p129_page_reserve(7u) != 0u) return 5u; /* video characters */
 
     p129_memory_ready = 1u;
     return 0u;
@@ -113,6 +114,12 @@ uint8_t p129_page_refcount(uint8_t page)
     return p129_page_refs[page];
 }
 
+uint8_t p129_page_is_allocated(uint8_t page)
+{
+    if (!p129_memory_ready || !p129_page_valid(page)) return 0u;
+    return (uint8_t)(p129_page_state[page] == P129_PAGE_ALLOCATED);
+}
+
 uint8_t p129_page_is_reserved(uint8_t page)
 {
     if (!p129_memory_ready || !p129_page_valid(page)) return 0u;
@@ -146,7 +153,8 @@ uint8_t p129_memory_selftest(void)
     uint16_t i;
 
     if (!p129_memory_ready) return 1u;
-    if (!p129_page_is_reserved(2u) ||
+    if (!p129_page_is_reserved(0u) ||
+        !p129_page_is_reserved(2u) ||
         !p129_page_is_reserved(3u) ||
         !p129_page_is_reserved(5u) ||
         !p129_page_is_reserved(7u)) return 2u;
@@ -158,8 +166,8 @@ uint8_t p129_memory_selftest(void)
         allocated[count++] = page;
     }
 
-    if (count != 60u) return 6u;
-    if (allocated[0] != 63u || allocated[59] != 0u) return 7u;
+    if (count != 59u) return 6u;
+    if (allocated[0] != 63u || allocated[58] != 1u) return 7u;
     if (p129_memory_free_count() != 0u) return 8u;
     if (p129_page_alloc_topdown() != P129_MEMORY_PAGE_NONE) return 9u;
 
@@ -178,7 +186,7 @@ uint8_t p129_memory_selftest(void)
     for (i = 0u; i < count; ++i) {
         if (p129_page_free(allocated[i]) != 0u) return 20u;
     }
-    if (p129_memory_free_count() != 60u) return 21u;
+    if (p129_memory_free_count() != 59u) return 21u;
     if (p129_page_refcount(63u) != 0u) return 22u;
 
     return 0u;

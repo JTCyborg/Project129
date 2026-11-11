@@ -36,7 +36,7 @@ The UI uses the Project127/Project126 ATM text layout: character plane on page 7
 
 ## Current implementation status (2026-11-11)
 
-- Bootstrap 0.3.17: adds the first resident physical-page allocator foundation. It models the agreed 1 MiB / 64 × 16 KiB pages, reserves the known resident/video pages P2/P5/P3/P7, and provides top-down allocation, reserve/free, pin/unpin reference counts and free-page accounting. Startup exercises full-pool exhaustion/reuse and pin lifetime. It is metadata-only: no physical RAM probe/access, hardware mapping, cross-page copy, or W3 lease yet. Build/runtime confirmation is pending.
+- Bootstrap 0.3.17: adds the first resident physical-page allocator foundation. It models the agreed 1 MiB / 64 × 16 KiB pages, reserves the boot W3 page P0 plus resident/video pages P2/P5/P3/P7, and provides top-down allocation, reserve/free, pin/unpin reference counts and free-page accounting. Startup exercises full-pool exhaustion/reuse and pin lifetime. The allocator is metadata-only. Bootstrap 0.3.18 adds a software-only four-window map shadow and transactional W3 remap (pin new page, commit/rollback, release old page); it deliberately performs no hardware OUT. Physical RAM access, cross-page copy and W3/UI lease integration remain incomplete. Build/runtime confirmation is pending. Build/runtime confirmation is pending.
 - Bootstrap 0.3.16: the user's 0.3.15 runtime log confirms keyboard inactivity completion: after the last key transition it emits `[KBD] DONE` and `[P129] KEYBOARD COMPLETE`, immediately followed by `[SPEAKER] ATM #FE D4 TONE BEGIN`. The next stage adds the Project127-compatible one-shot ATM beeper smoke test on port `#FE`, bit D4, approximately 0.57 seconds at 7 MHz. It initializes the output shadow with low nibble zero, matching Project127's explicit test contract (`BORDER/TAPE STATE=0`), toggles only D4, and ends with D4 low. The user's 0.3.16 runtime log confirms that the tone routine reached its end marker. Audible output has not yet been independently confirmed. This is a physical ATM beeper smoke test only; it is not IBM PC Speaker/PIT/PPI emulation and does not provide asynchronous audio.
 
 - Bootstrap 0.3.15: the user's 0.3.14 runtime log confirms ZX fallback make/break transitions (matrix row 3 changes `1F` -> `1E`/`1D` -> `1F`). ATM XT negotiation remains unverified and fell back to ZX. The monitor now uses the Project127 software delay loop and resets a 20-window inactivity countdown on each observed transition. Project127 describes 41 windows as approximately 10 seconds at 7 MHz; 20 windows target approximately 5 seconds. Expiry emits `[KBD] DONE` and `[P129] KEYBOARD COMPLETE`; the user's 0.3.15 runtime log confirms these markers. The timeout is configured for approximately five seconds, but exact wall-clock duration has not been measured.
@@ -136,3 +136,15 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Do not generalize that emulator vector to all physical boards. A full 257-byte repeated trampoline table is the generic safe option when the IM2 acknowledge byte may vary; a single vector slot is valid only under a verified deterministic vector contract.
 - PIT, keyboard IRQ, external ZX-Bus IRQ and NMI-triggered Shadow ROM switching remain unverified for the current Project129 target. The existing EC07 timer article is about two sound-card timers, not proof of an ATM system PIT interrupt.
 - Project129 remains DI-only. No asynchronous IRQ/NMI or speculative hardware port programming is enabled until fixed-page placement, mapper safety, vector/acknowledge policy and live delivery are verified.
+
+
+### Bootstrap 0.3.18 — software page mapper foundation
+
+- Added src/map.h and src/map.c, following the Project127 p127_map.asm contract without linking or copying its assembly.
+- Initial shadow map is W0=ROM, W1=P5 resident, W2=P2 stack/control, W3=P0 boot mapping. P0 is reserved by the allocator so top-down allocation cannot hand out the page currently mapped in W3.
+- ATM page encoding is 0x7F - page; window selectors are #3FF7/#7FF7/#BFF7/#FFF7. The mapper exposes these as software metadata only.
+- Only W3 can be remapped by this API. W0/W1/W2 remain fixed; the protected-window mask is checked before staging.
+- A W3 transaction pins the new allocated page before commit, snapshots the four-window map, supports rollback, and on accept unpins the previous allocated W3 page. p129_map_restore_boot releases the leased page and restores W3=P0.
+- Startup reports the mapper state and runs a transaction lifecycle check after the allocator check.
+- This is not hardware page switching: no OUT to ATM paging ports is performed. Physical mapping and W3/UI lease integration remain later stages.
+- The allocator free pool is 59 pages (64 total minus P0/P2/P3/P5/P7).
