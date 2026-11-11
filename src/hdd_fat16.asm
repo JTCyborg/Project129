@@ -425,7 +425,7 @@ p129_hdd_fat_ext_len:      db 0
 p129_hdd_fat_root_lba:     db 0,0,0,0
 p129_hdd_fat_sectors_left: dw 0
 p129_hdd_fat_entries_left: dw 0
-__p129_hdd_fat_file_count:  dw 0
+_p129_hdd_fat_file_count:  dw 0
 p129_hdd_fat_entry_ptr:    dw 0
 p129_hdd_fat_name:         ds 13,0
 p129_hdd_fat_ext:          ds 3,0
