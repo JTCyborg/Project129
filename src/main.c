@@ -27,6 +27,8 @@ static void debug_puts(const char *text)
 
 void main(void)
 {
+    /* First C-side output: confirms the loaded resident reached C main(). */
+    debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
     debug_puts("[P129] BUILD: BOOTSTRAP-0.1.0\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
