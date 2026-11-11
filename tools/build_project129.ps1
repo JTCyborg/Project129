@@ -43,7 +43,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
 Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.1.0"
-foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/boot/main.asm")) {
+foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
@@ -52,7 +52,7 @@ Write-Host "[P129 BUILD] ZCC=$Zcc"
 # at address zero unless the Z80ASM linker is explicitly relocated. Since TR-DOS
 # loads P129BOOT.C at #6000, relocate the complete linked image to #6000 so every
 # CALL/JR/data reference emitted by SDCC addresses the resident image correctly.
-& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/trdos.asm
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/trdos.asm src/ui.asm
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) {
     $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
