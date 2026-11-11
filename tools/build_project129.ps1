@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Zcc = "zcc",
-    [string]$SjAsmPlus = (Join-Path $PSScriptRoot "sjasmplus.exe"),
+    [string]$SjAsmPlus = "sjasmplus",
     [string]$Output = ".\disk_A.trd"
 )
 $ErrorActionPreference = "Stop"
@@ -29,8 +29,13 @@ $Resident = Join-Path $BuildDir "P129BOOT.bin"
 Remove-Item -Force -ErrorAction SilentlyContinue $Resident
 Remove-Item -Force -ErrorAction SilentlyContinue $Out
 
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.1.0"
+foreach ($Source in @("src/main.c", "src/entry.asm", "src/boot/main.asm")) {
+    $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
+    Write-Host "[P129 BUILD] $Source=$Hash"
+}
 Write-Host "[P129 BUILD] ZCC=$Zcc"
-& $Zcc +zx -vn -O2 -compiler=sdcc --no-crt -zorg=24576 -o (Join-Path $BuildDir "P129BOOT") -bn $Resident src/entry.asm src/main.c
+& $Zcc +zx -vn -O2 -compiler=sdcc --no-crt -zorg=24576 -m -o (Join-Path $BuildDir "P129BOOT") -bn $Resident src/entry.asm src/main.c
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) { throw "Z88DK did not create $Resident" }
 $ResidentSize = (Get-Item $Resident).Length
