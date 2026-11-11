@@ -42,8 +42,8 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.10-FAT16-ROOT"
-foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/boot/main.asm")) {
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.11-UINT32-RANGE"
+foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
@@ -83,10 +83,13 @@ $RtcProbeMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_probe\s*=\s*\$([0-9A-F
 $RtcReadMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_read_current\s*=\s*\$([0-9A-Fa-f]{4})')
 $HddProbeMatch = [regex]::Match($MapText, '(?m)^_p129_hdd_probe\s*=\s*\$([0-9A-Fa-f]{4})')
 $HddListMatch = [regex]::Match($MapText, '(?m)^_p129_hdd_list_root\s*=\s*\$([0-9A-Fa-f]{4})')
+$RangeValidateMatch = [regex]::Match($MapText, '(?m)^_p129_range_validate\s*=\s*\$([0-9A-Fa-f]{4})')
+$RangeSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_range_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 if (-not $UiInitMatch.Success -or -not $UiPutcMatch.Success -or -not $UiClockMatch.Success) { throw "Required ATM UI entry points are missing from $MapFile" }
 if (-not $RtcProbeMatch.Success -or -not $RtcReadMatch.Success) { throw "DS12887 RTC entry points are missing from $MapFile" }
 if (-not $HddProbeMatch.Success) { throw "Nemo IDE entry point _p129_hdd_probe is missing from $MapFile" }
 if (-not $HddListMatch.Success) { throw "FAT16 entry point _p129_hdd_list_root is missing from $MapFile" }
+if (-not $RangeValidateMatch.Success -or -not $RangeSelftestMatch.Success) { throw "UINT32 range API entry points are missing from $MapFile" }
 $UiInitAddress = [Convert]::ToInt32($UiInitMatch.Groups[1].Value, 16)
 $UiPutcAddress = [Convert]::ToInt32($UiPutcMatch.Groups[1].Value, 16)
 $UiClockAddress = [Convert]::ToInt32($UiClockMatch.Groups[1].Value, 16)
@@ -94,6 +97,8 @@ $RtcProbeAddress = [Convert]::ToInt32($RtcProbeMatch.Groups[1].Value, 16)
 $RtcReadAddress = [Convert]::ToInt32($RtcReadMatch.Groups[1].Value, 16)
 $HddProbeAddress = [Convert]::ToInt32($HddProbeMatch.Groups[1].Value, 16)
 $HddListAddress = [Convert]::ToInt32($HddListMatch.Groups[1].Value, 16)
+$RangeValidateAddress = [Convert]::ToInt32($RangeValidateMatch.Groups[1].Value, 16)
+$RangeSelftestAddress = [Convert]::ToInt32($RangeSelftestMatch.Groups[1].Value, 16)
 $TrdosAddress = [Convert]::ToInt32($TrdosMatch.Groups[1].Value, 16)
 $CEntryAddress = [Convert]::ToInt32($CEntryMatch.Groups[1].Value, 16)
 if ($CEntryAddress -lt 0x6000 -or $CEntryAddress -ge (0x6000 + $ResidentSize)) {
@@ -102,7 +107,7 @@ if ($CEntryAddress -lt 0x6000 -or $CEntryAddress -ge (0x6000 + $ResidentSize)) {
 if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
     throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
-foreach ($UiAddress in @($UiInitAddress, $UiPutcAddress, $UiClockAddress, $RtcProbeAddress, $RtcReadAddress, $HddProbeAddress, $HddListAddress)) {
+foreach ($UiAddress in @($UiInitAddress, $UiPutcAddress, $UiClockAddress, $RtcProbeAddress, $RtcReadAddress, $HddProbeAddress, $HddListAddress, $RangeValidateAddress, $RangeSelftestAddress)) {
     if ($UiAddress -lt 0x6000 -or $UiAddress -ge (0x6000 + $ResidentSize)) {
         throw ("UI/RTC entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
     }
@@ -116,7 +121,7 @@ for ($i = 0; $i -lt ($ResidentBytes.Length - 2); $i++) {
     }
 }
 if (-not $CallFound) { throw ("No CALL to linked C entry #{0:X4} found in resident binary" -f $CEntryAddress) }
-Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} UI_INIT=#{2:X4} UI_PUTC=#{3:X4} TRDOS_PRELOAD=#{4:X4} RTC_PROBE=#{5:X4} RTC_READ=#{6:X4} UI_CLOCK=#{7:X4} HDD_PROBE=#{8:X4} HDD_LIST=#{9:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress, $UiInitAddress, $UiPutcAddress, $TrdosAddress, $RtcProbeAddress, $RtcReadAddress, $UiClockAddress, $HddProbeAddress, $HddListAddress)
+Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} UI_INIT=#{2:X4} UI_PUTC=#{3:X4} TRDOS_PRELOAD=#{4:X4} RTC_PROBE=#{5:X4} RTC_READ=#{6:X4} UI_CLOCK=#{7:X4} HDD_PROBE=#{8:X4} HDD_LIST=#{9:X4} RANGE_VALIDATE=#{10:X4} RANGE_SELFTEST=#{11:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress, $UiInitAddress, $UiPutcAddress, $TrdosAddress, $RtcProbeAddress, $RtcReadAddress, $UiClockAddress, $HddProbeAddress, $HddListAddress, $RangeValidateAddress, $RangeSelftestAddress)
 Write-Host "[P129 BUILD] RESIDENT=p129boot.C LOAD=#6000 SIZE=$ResidentSize"
 Write-Host "[P129 BUILD] LINK_MAP=$([System.IO.Path]::ChangeExtension($Resident, '.map'))"
 Write-Host "[P129 BUILD] LINK_SYMBOLS=$([System.IO.Path]::ChangeExtension($Resident, '.sym'))"
