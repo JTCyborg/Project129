@@ -166,6 +166,22 @@ void p129_c_entry(void)
         p129_ui_clock_update();
         debug_puts("[RTC] DS12887 NOT DETECTED / INVALID STATUS\r\n");
     }
+    debug_puts("[HDD] NEMO IDE MASTER PROBE BEGIN\r\n");
+    p129_hdd_probe();
+    if (p129_hdd_present) {
+        debug_puts("[HDD] IDENTIFY DEVICE OK; LBA28 SECTORS=");
+        debug_hex8(p129_hdd_capacity[3]);
+        debug_hex8(p129_hdd_capacity[2]);
+        debug_hex8(p129_hdd_capacity[1]);
+        debug_hex8(p129_hdd_capacity[0]);
+        debug_puts("\r\n[HDD] LBA 63 READ OK; BPB 512B; SIGNATURE 55AA\r\n");
+    } else {
+        debug_puts("[HDD] PROBE FAILED; ERROR=");
+        debug_hex8(p129_hdd_error);
+        debug_puts(" STATUS=");
+        debug_hex8(p129_hdd_last_status);
+        debug_puts("\r\n");
+    }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     rtc_poll_divider = 0;
