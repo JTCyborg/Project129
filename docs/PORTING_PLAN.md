@@ -179,3 +179,12 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Added a resident assembly OUT backend for W3 only. Transaction commit, rollback, boot restore and nested bank enter/leave now perform the physical #FFF7 write as well as updating the software shadow. W0/W1/W2 are not written by this backend.
 - Added a physical page-isolation check: allocate two pages, acquire UI HANDOFF, save two bytes in each page, write distinct patterns, switch back and forth through #FFF7, verify isolation, restore original bytes, return W3 to P0 and release both pages.
 - This proves page selection/data isolation only after the user runs the new build and reports `[MAP] PHYSICAL W3 PAGE SWITCH / ISOLATION PASS`. It does not yet implement cross-page copy, stack transfer, resident trampoline execution or banked CALL/RET. The nested bank manager now switches the physical W3 page, but its nested selftest still checks ownership/depth and page restoration rather than executing code from the bank.
+
+
+### Bootstrap 0.3.23 — physical page-to-page copy
+
+- Added `p129_map_page_copy`, copying between allocated 16 KiB pages through the physical W3 aperture. A 32-byte resident staging buffer maps source and destination sequentially.
+- The source remains pinned as the outer bank lease. Each destination chunk is entered as a nested bank, written, then left to restore the source. The outer leave restores P0 and resumes UI.
+- Range validation uses widened arithmetic; zero-length copies are accepted; same-page overlapping copies use memmove direction.
+- Startup validates a 256-byte copy from the end of one page to another, then validates an overlapping same-page copy.
+- This is a page-local copy primitive, not yet a multi-page linear loader, stack transfer, or banked code execution.
