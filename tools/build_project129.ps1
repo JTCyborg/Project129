@@ -42,7 +42,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.18-SOFTWARE-PAGE-MAPPER"
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.19-W3-UI-LEASE"
 foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/map.h", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
@@ -78,6 +78,11 @@ $TrdosMatch = [regex]::Match($MapText, '(?m)^_p129_trdos_preload\s*=\s*\$([0-9A-
 if (-not $TrdosMatch.Success) { throw "TR-DOS preload symbol _p129_trdos_preload is missing from $MapFile" }
 $UiInitMatch = [regex]::Match($MapText, '(?m)^_p129_ui_init\s*=\s*\$([0-9A-Fa-f]{4})')
 $UiPutcMatch = [regex]::Match($MapText, '(?m)^_p129_ui_putc\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiLeaseTestMatch = [regex]::Match($MapText, '(?m)^_p129_ui_lease_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiLeaseQuiesceMatch = [regex]::Match($MapText, '(?m)^_p129_ui_quiesce\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiLeaseBeginMatch = [regex]::Match($MapText, '(?m)^_p129_ui_handoff_begin\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiLeaseEndMatch = [regex]::Match($MapText, '(?m)^_p129_ui_handoff_end\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiLeaseResumeMatch = [regex]::Match($MapText, '(?m)^_p129_ui_resume\s*=\s*\$([0-9A-Fa-f]{4})')
 $UiClockMatch = [regex]::Match($MapText, '(?m)^_p129_ui_clock_update\s*=\s*\$([0-9A-Fa-f]{4})')
 $RtcProbeMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_probe\s*=\s*\$([0-9A-Fa-f]{4})')
 $RtcReadMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_read_current\s*=\s*\$([0-9A-Fa-f]{4})')
@@ -88,6 +93,7 @@ $RangeSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_range_selftest\s*=\s*
 $KeyboardInitMatch = [regex]::Match($MapText, '(?m)^_p129_keyboard_init\s*=\s*\$([0-9A-Fa-f]{4})')
 $KeyboardPollMatch = [regex]::Match($MapText, '(?m)^_p129_keyboard_poll\s*=\s*\$([0-9A-Fa-f]{4})')
 if (-not $UiInitMatch.Success -or -not $UiPutcMatch.Success -or -not $UiClockMatch.Success) { throw "Required ATM UI entry points are missing from $MapFile" }
+if (-not $UiLeaseTestMatch.Success -or -not $UiLeaseQuiesceMatch.Success -or -not $UiLeaseBeginMatch.Success -or -not $UiLeaseEndMatch.Success -or -not $UiLeaseResumeMatch.Success) { throw "W3 UI lease entry points are missing from $MapFile" }
 if (-not $RtcProbeMatch.Success -or -not $RtcReadMatch.Success) { throw "DS12887 RTC entry points are missing from $MapFile" }
 if (-not $HddProbeMatch.Success) { throw "Nemo IDE entry point _p129_hdd_probe is missing from $MapFile" }
 if (-not $HddListMatch.Success) { throw "FAT16 entry point _p129_hdd_list_root is missing from $MapFile" }

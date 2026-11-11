@@ -7,6 +7,12 @@ SECTION CODE
 PUBLIC _p129_ui_init
 PUBLIC _p129_ui_putc
 PUBLIC _p129_ui_clock_update
+PUBLIC _p129_ui_quiesce
+PUBLIC _p129_ui_handoff_begin
+PUBLIC _p129_ui_handoff_end
+PUBLIC _p129_ui_resume
+PUBLIC _p129_ui_lease_state
+PUBLIC _p129_ui_lease_selftest
 EXTERN _p129_rtc_hour
 EXTERN _p129_rtc_minute
 EXTERN _p129_rtc_second
@@ -71,6 +77,8 @@ p129_ui_ports_open:
 
 p129_ui_mode_ready:
         call    p129_ui_restore_pages
+        ld      a,1
+        ld      (p129_ui_lease_state),a
         xor     a
         ld      (p129_ui_row),a
         ld      (p129_ui_col),a
@@ -95,6 +103,18 @@ p129_ui_mode_ready:
 
 ; C calls this helper with the character in A (via inline assembly).
 _p129_ui_putc:
+        push    af
+        push    bc
+        push    de
+        push    hl
+        ld      a,(p129_ui_lease_state)
+        cp      1
+        jp      nz,p129_ui_done
+        ; Restore the caller's character after checking the ownership gate.
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
         push    af
         push    bc
         push    de
@@ -412,6 +432,9 @@ _p129_ui_clock_update:
         push    bc
         push    de
         push    hl
+        ld      a,(p129_ui_lease_state)
+        cp      1
+        jp      nz,p129_ui_clock_done
         ld      a,(_p129_rtc_hour)
         ld      (p129_ui_clock_digits),a
         ld      a,(_p129_rtc_hour+1)
@@ -432,10 +455,100 @@ _p129_ui_clock_update:
         ld      a,2
         ld      c,18
         call    p129_ui_print_at
+p129_ui_clock_done:
         pop     hl
         pop     de
         pop     bc
         pop     af
+        ret
+
+; W3 ownership gate: 0=OFFLINE, 1=UI ACTIVE, 2=QUIESCED, 3=HANDOFF.
+_p129_ui_lease_state:
+p129_ui_lease_state: db 0
+
+_p129_ui_quiesce:
+        ld      a,(p129_ui_lease_state)
+        cp      1
+        jp      nz,p129_ui_lease_reject
+        ld      a,2
+        ld      (p129_ui_lease_state),a
+        xor     a
+        ret
+
+_p129_ui_handoff_begin:
+        ld      a,(p129_ui_lease_state)
+        cp      2
+        jp      nz,p129_ui_lease_reject
+        ld      a,3
+        ld      (p129_ui_lease_state),a
+        xor     a
+        ret
+
+_p129_ui_handoff_end:
+        ld      a,(p129_ui_lease_state)
+        cp      3
+        jp      nz,p129_ui_lease_reject
+        ld      a,2
+        ld      (p129_ui_lease_state),a
+        xor     a
+        ret
+
+_p129_ui_resume:
+        ld      a,(p129_ui_lease_state)
+        cp      2
+        jp      nz,p129_ui_lease_reject
+        ld      a,1
+        ld      (p129_ui_lease_state),a
+        xor     a
+        ret
+
+p129_ui_lease_reject:
+        ld      a,1
+        ret
+
+; Validate legal transitions and invalid-order rejection; leave UI ACTIVE.
+_p129_ui_lease_selftest:
+        ld      a,(p129_ui_lease_state)
+        cp      1
+        jp      nz,p129_ui_lease_test_fail
+        call    _p129_ui_handoff_begin
+        or      a
+        jp      z,p129_ui_lease_test_fail
+        call    _p129_ui_quiesce
+        or      a
+        jp      nz,p129_ui_lease_test_fail
+        ld      a,(p129_ui_lease_state)
+        cp      2
+        jp      nz,p129_ui_lease_test_fail
+        call    _p129_ui_handoff_begin
+        or      a
+        jp      nz,p129_ui_lease_test_fail
+        ld      a,(p129_ui_lease_state)
+        cp      3
+        jp      nz,p129_ui_lease_test_fail
+        call    _p129_ui_quiesce
+        or      a
+        jp      z,p129_ui_lease_test_fail
+        call    _p129_ui_handoff_end
+        or      a
+        jp      nz,p129_ui_lease_test_fail
+        call    _p129_ui_resume
+        or      a
+        jp      nz,p129_ui_lease_test_fail
+        call    _p129_ui_resume
+        or      a
+        jp      z,p129_ui_lease_test_fail
+        xor     a
+        ret
+p129_ui_lease_test_fail:
+        ; Best-effort recovery to ACTIVE after an unexpected transition result.
+        ld      a,(p129_ui_lease_state)
+        cp      3
+        call    z,_p129_ui_handoff_end
+        ld      a,(p129_ui_lease_state)
+        cp      2
+        call    z,_p129_ui_resume
+        ld      a,1
         ret
 
 p129_ui_row: db 0
