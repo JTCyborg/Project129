@@ -35,7 +35,7 @@ if not exist "tools\build_project129.ps1" (
 
 if not exist "build" mkdir "build"
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "tools\build_project129.ps1" -SjAsmPlus ".\tools\sjasmplus.exe"
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "tools\build_project129.ps1" -SjAsmPlus "%SJASMPLUS%"
 if errorlevel 1 goto :failed
 
 if not exist "disk_A.trd" (
