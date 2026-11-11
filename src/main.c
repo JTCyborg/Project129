@@ -1,15 +1,12 @@
 #include <stdint.h>
 
-/*
- * Project129 Z88DK bootstrap.
- * Hardware-facing TR-DOS ROM call is isolated in trdos.asm; C owns the
- * catalogue validation and startup-stage reporting.
- */
-
+/* Project129 bootstrap: ATM UI is brought up before storage/services. */
 volatile uint8_t p129_debug_value;
+volatile uint8_t p129_ui_ready;
 static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
 
-extern uint16_t p129_trdos_preload(void);\nextern void p129_ui_init(void);\nvolatile uint8_t p129_ui_ready;
+extern uint16_t p129_trdos_preload(void);
+extern void p129_ui_init(void);
 
 static void debug_putc(uint8_t value)
 {
@@ -19,12 +16,14 @@ static void debug_putc(uint8_t value)
         ld bc,00EFh
         out (c),a
     __endasm;
+
     if (p129_ui_ready) {
         __asm
             ld a,(_p129_debug_value)
             call _p129_ui_putc
         __endasm;
     }
+}
 
 static void debug_puts(const char *text)
 {
@@ -64,8 +63,13 @@ void p129_c_entry(void)
 
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.2.0\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.0-UI-FIRST\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
+
+    /* Interface is initialized first, before TR-DOS and other services. */
+    p129_ui_init();
+    p129_ui_ready = 1;
+    debug_puts("[P129] ATM RG6 80X25 UI READY\r\n");
 
     debug_puts("[TRDOS] DIRECTORY READ BEGIN\r\n");
     result = p129_trdos_preload();
@@ -84,10 +88,7 @@ void p129_c_entry(void)
     debug_puts("[TRDOS] FILE COUNT=");
     debug_hex8(files);
     debug_puts("\r\n");
-
-    /* UI/W3 handoff is the next stage; no video or live IRQ is enabled here. */
     debug_puts("[P129] TR-DOS CATALOGUE PRELOADED\r\n");
-    debug_puts("[P129] W3/UI INITIALIZATION PENDING\r\n");
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     for (;;) {}
