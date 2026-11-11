@@ -1,10 +1,10 @@
 #include "map.h"
 #include "memory.h"
 
-/* Project129 software page-map layer, version 0.1.0.
- * Mirrors Project127: W0=ROM, W1=P5, W2=P2, W3=P0.
- * ATM RAM page encoding is 0x7F-page; ports are 3FF7/7FF7/BFF7/FFF7.
- * No OUT instructions: physical mapping follows after resident/UI safety.
+/* Project129 ATM page mapper, version 0.2.0.
+ * Hardware contract: ATM2+ hidden page ports, W3=#FFF7, data=0x7F-page.
+ * W0/W1/W2 remain fixed; W3 is switched only after UI HANDOFF.
+ * The UI's #0177 / #3D2F trampoline keeps DOSEN/shadow ports accessible.
  */
 static uint8_t p129_map_shadow[P129_MAP_WINDOW_COUNT];
 static uint8_t p129_map_ready;
@@ -18,6 +18,8 @@ static uint8_t p129_map_w3_lease_active;
 #define P129_MAP_BANK_DEPTH_MAX 8u
 static uint8_t p129_map_bank_stack[P129_MAP_BANK_DEPTH_MAX];
 static uint8_t p129_map_bank_depth;
+volatile uint8_t p129_map_hw_encoded;
+extern void p129_map_hw_write(void);
 extern uint8_t p129_ui_quiesce(void);
 extern uint8_t p129_ui_handoff_begin(void);
 extern uint8_t p129_ui_handoff_end(void);
@@ -37,6 +39,8 @@ uint8_t p129_map_init(void)
     p129_map_txn_committed = 0u;
     p129_map_w3_lease_active = 0u;
     p129_map_bank_depth = 0u;
+    /* UI initialization has already opened ATM shadow ports via #3D2F/#0177. */
+    if (p129_map_hw_apply(0u) != 0u) return 3u;
     p129_map_ready = 1u;
     return 0u;
 }
@@ -58,6 +62,15 @@ uint8_t p129_map_encode_page(uint8_t page)
 {
     if (page >= P129_MEMORY_PAGE_COUNT) return P129_MAP_PAGE_ROM;
     return (uint8_t)(0x7Fu - page);
+}
+
+/* Physical backend. Caller must own W3 or be initializing it after UI setup. */
+static uint8_t p129_map_hw_apply(uint8_t page)
+{
+    if (page >= P129_MEMORY_PAGE_COUNT) return 1u;
+    p129_map_hw_encoded = p129_map_encode_page(page);
+    p129_map_hw_write();
+    return 0u;
 }
 
 /* W3-only transaction; W0/W1/W2 are permanently protected. */
@@ -85,6 +98,7 @@ uint8_t p129_map_txn_commit(void)
 {
     if (!p129_map_txn_active || p129_map_txn_committed) return 1u;
     if (p129_map_txn_window != 3u || p129_map_txn_new_page >= P129_MEMORY_PAGE_COUNT) return 2u;
+    if (p129_map_hw_apply(p129_map_txn_new_page) != 0u) return 3u;
     p129_map_shadow[p129_map_txn_window] = p129_map_txn_new_page;
     p129_map_txn_committed = 1u;
     return 0u;
@@ -93,9 +107,16 @@ uint8_t p129_map_txn_commit(void)
 uint8_t p129_map_txn_rollback(void)
 {
     uint8_t i;
+    uint8_t current_page;
     if (!p129_map_txn_active) return 1u;
+    current_page = p129_map_shadow[3];
+    if (p129_map_txn_committed &&
+        p129_map_hw_apply(p129_map_txn_snapshot[3]) != 0u) return 2u;
+    if (p129_page_unpin(p129_map_txn_new_page) != 0u) {
+        if (p129_map_txn_committed) (void)p129_map_hw_apply(current_page);
+        return 3u;
+    }
     for (i = 0u; i < P129_MAP_WINDOW_COUNT; ++i) p129_map_shadow[i] = p129_map_txn_snapshot[i];
-    if (p129_page_unpin(p129_map_txn_new_page) != 0u) return 2u;
     p129_map_txn_active = 0u;
     p129_map_txn_committed = 0u;
     return 0u;
@@ -118,9 +139,13 @@ uint8_t p129_map_restore_boot(void)
     uint8_t old_page;
     if (!p129_map_ready || p129_map_txn_active) return 1u;
     old_page = p129_map_shadow[3];
+    if (p129_map_hw_apply(0u) != 0u) return 2u;
     if (old_page != 0u && old_page < P129_MEMORY_PAGE_COUNT &&
         p129_page_is_allocated(old_page)) {
-        if (p129_page_unpin(old_page) != 0u) return 2u;
+        if (p129_page_unpin(old_page) != 0u) {
+            (void)p129_map_hw_apply(old_page);
+            return 3u;
+        }
     }
     p129_map_shadow[3] = 0u;
     return 0u;
@@ -182,7 +207,7 @@ uint8_t p129_map_w3_lease_selftest(void)
     return 0u;
 }
 
-/* Nested bank ownership stack. W3 remains software-shadow only. */
+/* Nested bank ownership stack. Every W3 transition is a physical #FFF7 OUT. */
 uint8_t p129_map_w3_bank_enter(uint8_t page)
 {
     if (!p129_map_ready || page >= P129_MEMORY_PAGE_COUNT) return 1u;
@@ -197,6 +222,10 @@ uint8_t p129_map_w3_bank_enter(uint8_t page)
     }
     if (p129_map_shadow[3] == page) return 6u;
     if (p129_page_pin(page) != 0u) return 7u;
+    if (p129_map_hw_apply(page) != 0u) {
+        (void)p129_page_unpin(page);
+        return 8u;
+    }
     p129_map_bank_stack[p129_map_bank_depth] = page;
     p129_map_shadow[3] = page;
     ++p129_map_bank_depth;
@@ -218,10 +247,111 @@ uint8_t p129_map_w3_bank_leave(void)
     current = p129_map_bank_stack[p129_map_bank_depth - 1u];
     previous = p129_map_bank_stack[p129_map_bank_depth - 2u];
     if (p129_map_shadow[3] != current) return 3u;
-    if (p129_page_unpin(current) != 0u) return 4u;
+    if (p129_map_hw_apply(previous) != 0u) return 4u;
     p129_map_shadow[3] = previous;
+    if (p129_page_unpin(current) != 0u) {
+        (void)p129_map_hw_apply(current);
+        p129_map_shadow[3] = current;
+        return 5u;
+    }
     --p129_map_bank_depth;
     return 0u;
+}
+
+/* Verify #FFF7 selects independent RAM pages through W3. Original bytes are
+ * saved/restored; UI remains in HANDOFF for the entire physical access test.
+ */
+uint8_t p129_map_w3_hw_selftest(void)
+{
+    uint8_t p1 = P129_MEMORY_PAGE_NONE;
+    uint8_t p2 = P129_MEMORY_PAGE_NONE;
+    uint8_t p1a = 0u, p1b = 0u, p2a = 0u, p2b = 0u;
+    uint8_t p1_saved = 0u, p2_saved = 0u, p2_pinned = 0u, lease = 0u;
+    uint8_t result = 0u;
+    volatile uint8_t *window = (volatile uint8_t *)0xC000u;
+
+    if (!p129_map_ready || p129_map_bank_depth != 0u || p129_map_w3_lease_active) return 1u;
+    p1 = p129_page_alloc_topdown();
+    if (p1 == P129_MEMORY_PAGE_NONE) return 2u;
+    p2 = p129_page_alloc_topdown();
+    if (p2 == P129_MEMORY_PAGE_NONE) {
+        (void)p129_page_free(p1);
+        return 3u;
+    }
+    if (p129_map_w3_lease_begin(p1) != 0u) {
+        result = 4u;
+        goto cleanup;
+    }
+    lease = 1u;
+    p1a = window[0x0100u];
+    p1b = window[0x3F00u];
+    p1_saved = 1u;
+    window[0x0100u] = 0xA5u;
+    window[0x3F00u] = 0x5Au;
+
+    if (p129_page_pin(p2) != 0u) {
+        result = 5u;
+        goto cleanup;
+    }
+    p2_pinned = 1u;
+    if (p129_map_hw_apply(p2) != 0u) {
+        result = 6u;
+        goto cleanup;
+    }
+    p129_map_shadow[3] = p2;
+    p2a = window[0x0100u];
+    p2b = window[0x3F00u];
+    p2_saved = 1u;
+    window[0x0100u] = 0x3Cu;
+    window[0x3F00u] = 0xC3u;
+
+    if (p129_map_hw_apply(p1) != 0u) {
+        result = 7u;
+        goto cleanup;
+    }
+    p129_map_shadow[3] = p1;
+    if (window[0x0100u] != 0xA5u || window[0x3F00u] != 0x5Au) {
+        result = 8u;
+        goto cleanup;
+    }
+    if (p129_map_hw_apply(p2) != 0u) {
+        result = 9u;
+        goto cleanup;
+    }
+    p129_map_shadow[3] = p2;
+    if (window[0x0100u] != 0x3Cu || window[0x3F00u] != 0xC3u) {
+        result = 10u;
+        goto cleanup;
+    }
+
+cleanup:
+    if (lease) {
+        if (p2_saved) {
+            (void)p129_map_hw_apply(p2);
+            p129_map_shadow[3] = p2;
+            window[0x0100u] = p2a;
+            window[0x3F00u] = p2b;
+        }
+        if (p1_saved) {
+            (void)p129_map_hw_apply(p1);
+            p129_map_shadow[3] = p1;
+            window[0x0100u] = p1a;
+            window[0x3F00u] = p1b;
+        }
+        if (p2_pinned) {
+            if (p129_page_unpin(p2) != 0u && result == 0u) result = 11u;
+        }
+        if (p129_map_w3_lease_end() != 0u && result == 0u) result = 12u;
+    } else if (p2_pinned) {
+        if (p129_page_unpin(p2) != 0u && result == 0u) result = 13u;
+    }
+    if (p1 != P129_MEMORY_PAGE_NONE && p129_page_refcount(p1) == 0u) {
+        if (p129_page_free(p1) != 0u && result == 0u) result = 14u;
+    }
+    if (p2 != P129_MEMORY_PAGE_NONE && p129_page_refcount(p2) == 0u) {
+        if (p129_page_free(p2) != 0u && result == 0u) result = 15u;
+    }
+    return result;
 }
 
 uint8_t p129_map_w3_bank_depth(void)

@@ -11,7 +11,7 @@
 #define P129_MAP_PROTECT_W3 0x08u
 #define P129_MAP_PROTECT_FIXED 0x07u
 
-/* Software shadow only. No ATM page-port I/O is issued by this module. */
+/* ATM2+ physical W3 mapper; W0/W1/W2 are fixed and protected. */
 uint8_t p129_map_init(void);
 uint8_t p129_map_get_window(uint8_t window);
 uint16_t p129_map_window_port(uint8_t window);
@@ -29,5 +29,6 @@ uint8_t p129_map_w3_bank_enter(uint8_t page);
 uint8_t p129_map_w3_bank_leave(void);
 uint8_t p129_map_w3_bank_depth(void);
 uint8_t p129_map_w3_bank_selftest(void);
+uint8_t p129_map_w3_hw_selftest(void);
 
 #endif

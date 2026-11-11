@@ -171,3 +171,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - The outer enter acquires the UI lease and pins the first allocated page. Nested enters pin the child page and switch the software W3 shadow while retaining the parent page pin. Leave restores the parent page and releases the child pin; the outer leave restores W3=P0 and resumes the UI.
 - Added a three-level nested enter/leave acceptance check, including depth, active-page and reference-count validation at each return.
 - This is a software ownership/page-map manager only. It does not yet execute code from W3, transfer the CPU stack, copy data through physical pages, or issue physical ATM page-mapper OUT operations. Those require the verified physical mapper backend and resident assembly trampoline.
+
+### Bootstrap 0.3.22 — physical ATM2+ W3 page mapper
+
+- Hardware contract verified against the checked-in ATM2+ architecture document and Project127/Project126 reference: hidden dispatcher ports are #3FF7/#7FF7/#BFF7/#FFF7; W3 is #FFF7; RAM page N is selected by writing #7F-N (D6=1 selects RAM, D7=0 avoids the #7FFD low-page mux).
+- Shadow ports/DOSEN are opened by the existing UI initialization through the TR-DOS ROM trampoline #3D2F with port #0177, matching Project127/Project126. The RTC GLUK close path also restores this state. The mapper initializes only after UI startup.
+- Added a resident assembly OUT backend for W3 only. Transaction commit, rollback, boot restore and nested bank enter/leave now perform the physical #FFF7 write as well as updating the software shadow. W0/W1/W2 are not written by this backend.
+- Added a physical page-isolation check: allocate two pages, acquire UI HANDOFF, save two bytes in each page, write distinct patterns, switch back and forth through #FFF7, verify isolation, restore original bytes, return W3 to P0 and release both pages.
+- This proves page selection/data isolation only after the user runs the new build and reports `[MAP] PHYSICAL W3 PAGE SWITCH / ISOLATION PASS`. It does not yet implement cross-page copy, stack transfer, resident trampoline execution or banked CALL/RET. The nested bank manager now switches the physical W3 page, but its nested selftest still checks ownership/depth and page restoration rather than executing code from the bank.
