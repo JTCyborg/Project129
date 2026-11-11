@@ -3,9 +3,9 @@
 ; Ported from the verified Project127 / Project126 / Project125 contract.
 ; Read-only: never writes DS12887 time or control registers.
 ;
-; Native GLUK: #EFF7 gate, #DFF7 register index, #BFF7 data.
-; SMUC fallback: #FFBA selects RTC read mode, #DFBA index/data.
-; #EFF7 close is followed by the Project126 TR-DOS #3D2F restore trampoline.
+; Native GLUK: 0EFF7h gate, 0DFF7h register index, 0BFF7h data.
+; SMUC fallback: 0FFBAh selects RTC read mode, 0DFBAh index/data.
+; 0EFF7h close is followed by the Project126 TR-DOS 03D2Fh restore trampoline.
 ;
 ; C API:
 ;   p129_rtc_probe()
@@ -113,25 +113,25 @@ p129_rtc_set_unknown:
 
 ; Capture DS12887 Status D, A and B.
 p129_rtc_read_status:
-        ld      a,#0D
+        ld      a,00Dh
         call    p129_rtc_read_reg
         ld      (p129_rtc_status_d),a
-        ld      a,#0A
+        ld      a,00Ah
         call    p129_rtc_read_reg
         ld      (p129_rtc_status_a),a
-        ld      a,#0B
+        ld      a,00Bh
         call    p129_rtc_read_reg
         ld      (p129_rtc_status_b),a
         ret
 
-; A plausible DS12887 has VRT=1 (Status D=#80) and divider bits 010b.
+; A plausible DS12887 has VRT=1 (Status D=080h) and divider bits 010b.
 p129_rtc_validate_status:
         ld      a,(p129_rtc_status_d)
-        cp      #80
+        cp      080h
         jr      nz,p129_rtc_status_invalid
         ld      a,(p129_rtc_status_a)
-        and     #70
-        cp      #20
+        and     070h
+        cp      020h
         jr      nz,p129_rtc_status_invalid
         or      a
         ret
@@ -146,13 +146,13 @@ p129_rtc_open:
         ld      a,(_p129_rtc_backend)
         or      a
         jr      nz,p129_rtc_open_smuc
-        ld      bc,#EFF7
-        ld      a,#80
+        ld      bc,0EFF7h
+        ld      a,080h
         out     (c),a
         jr      p129_rtc_open_done
 p129_rtc_open_smuc:
-        ; Keep the documented SMUC selector pattern; do not write #00.
-        ld      bc,#FFBA
+        ; Keep the documented SMUC selector pattern; do not write 000h.
+        ld      bc,0FFBAh
         ld      a,#71
         out     (c),a
 p129_rtc_open_done:
@@ -166,7 +166,7 @@ p129_rtc_close:
         ld      a,(_p129_rtc_backend)
         or      a
         jr      nz,p129_rtc_close_done
-        ld      bc,#EFF7
+        ld      bc,0EFF7h
         xor     a
         out     (c),a
         ; Re-establish the permanent DOSEN/shadow-port and RG6 state.
@@ -184,15 +184,15 @@ p129_rtc_read_reg:
         or      a
         jr      nz,p129_rtc_read_reg_smuc
         ld      a,c
-        ld      bc,#DFF7
+        ld      bc,0DFF7h
         out     (c),a
-        ld      bc,#BFF7
+        ld      bc,0BFF7h
         in      a,(c)
         pop     bc
         ret
 p129_rtc_read_reg_smuc:
         ld      a,c
-        ld      bc,#DFBA
+        ld      bc,0DFBAh
         out     (c),a
         in      a,(c)
         pop     bc
@@ -205,16 +205,16 @@ p129_rtc_read_snapshot:
 p129_rtc_snapshot_retry:
         call    p129_rtc_wait_uip
         ret     c
-        ld      a,#00
+        ld      a,000h
         call    p129_rtc_read_reg
         ld      (p129_rtc_seconds_raw),a
-        ld      a,#02
+        ld      a,002h
         call    p129_rtc_read_reg
         ld      (p129_rtc_minutes_raw),a
-        ld      a,#04
+        ld      a,004h
         call    p129_rtc_read_reg
         ld      (p129_rtc_hours_raw),a
-        ld      a,#00
+        ld      a,000h
         call    p129_rtc_read_reg
         ld      c,a
         ld      a,(p129_rtc_seconds_raw)
@@ -234,7 +234,7 @@ p129_rtc_wait_uip:
         push    bc
         ld      b,0
 p129_rtc_uip_loop:
-        ld      a,#0A
+        ld      a,00Ah
         call    p129_rtc_read_reg
         bit     7,a
         jr      nz,p129_rtc_uip_busy
@@ -256,10 +256,10 @@ p129_rtc_convert_snapshot:
         jr      nz,p129_rtc_hour_24
 
         ld      a,b
-        and     #80
+        and     080h
         ld      (p129_rtc_hour_pm),a
         ld      a,b
-        and     #7F
+        and     07Fh
         call    p129_rtc_to_binary
         ld      (p129_rtc_hour_binary),a
         ld      a,(p129_rtc_hour_pm)
@@ -299,10 +299,10 @@ p129_rtc_to_binary:
         ld      a,b
         ret     nz
         ld      b,a
-        and     #0F
+        and     00Fh
         ld      c,a
         ld      a,b
-        and     #F0
+        and     0F0h
         rrca
         rrca
         rrca
@@ -336,27 +336,27 @@ p129_rtc_decimal_ones:
         ld      (hl),a
         ret
 
-; Exact Project126 DOSEN restore trampoline, needed after GLUK #EFF7 close.
+; Exact Project126 DOSEN restore trampoline, needed after GLUK 0EFF7h close.
 p129_rtc_restore_dosen:
         push    af
         push    bc
         ld      bc,p129_rtc_restore_dosen_done
         push    bc
-        ld      bc,#2A53
+        ld      bc,02A53h
         push    bc
-        ld      bc,#0177
+        ld      bc,00177h
         ld      a,#C6
-        jp      #3D2F
+        jp      03D2Fh
 p129_rtc_restore_dosen_done:
         pop     bc
         pop     af
         ; The ROM call may have changed the active W3 mapping.
-        ld      a,#7F
+        ld      a,07Fh
         ld      bc,#FFF7
         out     (c),a
         ret
 
-SECTION DATA
+SECTION CODE
 _p129_rtc_available: db 0
 _p129_rtc_backend:   db 0
 p129_rtc_status_a:   db 0
