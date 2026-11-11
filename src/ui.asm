@@ -504,6 +504,7 @@ _p129_ui_resume:
 
 p129_ui_lease_reject:
         ld      a,1
+        or      a               ; Return A=1 with Z=0 for the caller's status test.
         ret
 
 ; Validate legal transitions and invalid-order rejection; leave UI ACTIVE.
