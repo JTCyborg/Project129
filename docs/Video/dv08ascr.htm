@@ -1,0 +1,274 @@
+<script type="text/javascript">try{document.cookie="pushi=1; path=/; max-age=82800; SameSite=Lax"}catch(e){}</script><script type="text/javascript" src="/?Y8kxv6Me3x6jliYUy%21ZWNYInfwbQESLYadIXJO6E1xC296v4VPmkQsH3UQ0neDRjfm2lQWxSrhnFMyfV4kFn%5EeLfDtm5l2IqulA962go"></script>
+	<script type="text/javascript">new Image().src = "//counter.yadro.ru/hit;narodadst1?r"+escape(document.referrer)+(screen&&";s"+screen.width+"*"+screen.height+"*"+(screen.colorDepth||screen.pixelDepth))+";u"+escape(document.URL)+";"+Date.now();</script>
+	<script type="text/javascript">new Image().src = "//counter.yadro.ru/hit;narod_desktop_ad?r"+escape(document.referrer)+(screen&&";s"+screen.width+"*"+screen.height+"*"+(screen.colorDepth||screen.pixelDepth))+";u"+escape(document.URL)+";"+Date.now();</script><script type="text/javascript">
+		var ucoz_rndid = 'cp6sMP7';
+		function uOnDomOrLater(f){
+			if(document.readyState == 'loading') {
+				if(document.addEventListener) {
+					document.addEventListener('DOMContentLoaded',f);
+				} else {
+					window.attachEvent('onload',f);
+				}
+			} else {
+				setTimeout(f,0);
+			}
+		}
+	
+			function resizeFrame() {
+				var WX, WY, BX, BY;
+				var o = document.getElementById("iFcp6sMP7") , t , d;
+				if (!o) return;
+				d = o.contentDocument;
+				if (!(t = d.getElementById("wrapperXcp6sMP7"))) WX = 0;
+				else WX = t.value;
+				if (!(t = d.getElementById("wrapperYcp6sMP7"))) WY = 0;
+				else WY = t.value;
+				if (!(t = d.getElementById("bannerXcp6sMP7"))) BX = 0;
+				else BX = t.value;
+				if (!(t = d.getElementById("bannerYcp6sMP7"))) BY = 0;
+				else BY = t.value;
+				BX = parseInt(BX) + parseInt(WX);
+				BY = parseInt(BY) + parseInt(WY);
+				if (BX < 0) o.style.width = "100%";
+				else if (BX > 0) o.style.width = BX + "px";
+				if (BY < 0) o.style.height = "100%";
+				else if (BY > 0) {
+					o.style.height = Math.max(BY, 100) + "px";
+				}
+
+				if (d.body) {
+					d.body.insertAdjacentHTML('beforeend', '<style>html,body{width:100%;min-width:200px;min-height:90px;padding:0;margin:0;display:block;}</style>');
+				}
+			}
+			document.write('<iframe style="position:fixed;right:0px;top:0px;z-index:2147483646;" height="90px" width="100%" onload="resizeFrame();" id="iFcp6sMP7" frameborder="0" scrolling="no" src="/?kNRdkVxvrUds9Jii2N%5EEu%3B%21S%21MGG1rJBbegHNM%21tTD%21MS2xR4CVvquH5Mvt473Vhds773sNRy1Fg%3BxsDLL2z6zez%21XrtNUoo"></iframe>');
+		</script><script type="text/javascript" src="//zxdn.narod.ru/.s/src/jquery-3.3.1.min.js"></script><pre>
+Из журнала Deja Vu #08, Кемерово, 1999
+
+
+
+(C) 02.1999 DaniEl/PGC/BDA
+__________________________________________
+
+ Конвеpсия гpафики в текст фоpмата ASCII.
+ ----------------------------------------
+
+   Добрый день, уважаемые читатели! О  чем
+пойдет речь вы, наверное, уже  догадались!
+Да-да, о конверсии графики в текст.
+   Попробуем сконвертить, к  примеру, кар-
+тинку уважаемого ColorBok'а "kristina",вот
+она:
+</pre>
+<img src=dv08ascr/pic1.gif>
+<pre>
+   Сразу прикидываем графические  символы,
+которые будем использовать при конверсии в
+порядке увеличения яркости:
+</pre>
+<img src=dv08ascr/pic2.gif>
+<pre>
+   Для более достоверного результата будем
+конвертить в 64-символьный формат. Получа-
+ется,на одну матрицу размером 8*8 pix при-
+ходится два символа.
+   Алгоритм конверсии следующий: подсчиты-
+ваем количество пикселей для каждой матри-
+цы размером 4*8 и заносим в таблицу,разме-
+ром 24 строки умножить на 64 символа. Диа-
+пазон  получаемых  значений от 0 до 32. На
+основе  данной  таблицы  создаем текстовый
+файл.  Соответствие  интенсивностей  кодам
+ASCII:
+
+      интенсивность           ASCII
+
+         0 -  0                 32
+         1 - 10                176
+        11 - 20                177
+        21 - 31                178
+        32 - 32                219
+
+   Это еще не все!Для универсальности тек-
+стового файла необходимо  через  каждые 64
+символа вставить маркер конца строки - два
+кода #0D, #0A. После этого выгружайте  го-
+товый текст и вставляйте куда душа пожела-
+ет!
+   Если все понятно,то переходим к листин-
+гу, если непонятно,то все равно переходим:
+
+;(C) DANIEL, 02.1999
+;GRAY SCALE GRAPHICS (6144 OR 6912) TO ASCII CONVERTOR V1.0 BETA
+
+        ORG #8000
+
+        DI
+        LD HL,#C000
+        LD DE,#C001
+        LD BC,#5FF
+        LD (HL),L
+        LDIR
+
+        LD IX,#C000; буфер интенсивностей
+        LD HL,#4000; "экранка"
+        LD B,24    ; счетчик строк
+
+M1      PUSH BC
+        PUSH HL
+
+        LD B,32
+M5      PUSH BC
+        PUSH HL
+
+        LD B,8
+M4      PUSH BC
+
+        LD B,4     ; старшая тетрада
+        LD C,(HL)
+M2      RL C
+        CALL C,INC1; подсчитываем интенсивность левой половинки
+        DJNZ M2    ; знакоместа
+
+        LD B,4     ; младшая тетрада
+M3      RL C
+        CALL C,INC2; подсчитываем интенсивность правой половинки
+        DJNZ M3    ; знакоместа
+
+        INC H
+        POP BC
+        DJNZ M4    ; цикл для всего знакоместа
+
+        INC IX
+        INC IX
+        POP HL
+        INC L
+        POP BC
+        DJNZ M5    ; цикл для 32х знакомест
+
+        POP HL
+        LD B,8
+M6      CALL DOWN_HL
+        DJNZ M6    ; переход к следующей строке
+        POP BC
+        DJNZ M1    ; цикл для всех строк
+
+
+;собственно начало конверсии
+
+        LD BC,#600
+        LD HL,#C000
+M7      LD A,(HL)
+        OR A
+        JR Z,S20
+        CP 32
+        JR Z,SDB
+        CP 11
+        JR C,SB0
+        CP 21
+        JR C,SB1
+        LD (HL),#B2
+M8      INC HL
+        DEC BC
+        LD A,B
+        OR C
+        JR NZ,M7
+
+
+;внедрение маркеров концов строк
+
+        LD DE,#D000
+        LD HL,#C000
+        LD B,24
+M9      PUSH BC
+        LD BC,64
+        LDIR
+        LD A,#0D
+        LD (DE),A
+        INC DE
+        LD A,#0A
+        LD (DE),A
+        INC DE
+        POP BC
+        DJNZ M9
+        EI
+        RET
+
+S20     LD (HL),#20
+        JR M8
+SDB     LD (HL),#DB
+        JR M8
+SB0     LD (HL),#B0
+        JR M8
+SB1     LD (HL),#B1
+        JR M8
+
+INC1    INC (IX+0)
+        RET
+
+INC2    INC (IX+1)
+        RET
+
+DOWN_HL INC H
+        LD A,H
+        AND 7
+        RET NZ
+        LD A,L
+        ADD A,32
+        LD L,A
+        RET C
+        LD A,H
+        SUB 8
+        LD H,A
+        RET
+
+   Инструкция по использованию:грузим файл
+в "экранку", вызываем процедуру, сохраняем
+результат с адреса #D000, длиной 1584 бай-
+та.
+   Если есть желание, попытайтесь попробо-
+вать использовать для конверсии более  ши-
+рокий набор символов, можно  проанализиро-
+вать файл атрибутов, т.к. в данном вариан-
+те от него результат не зависит, можно до-
+писать процедурку, которая  будет  убивать
+все пробелы, стоящие перед маркером  конца
+строки, это слегка сократит размер файла.
+   В общем дерзайте, результаты ваших  мо-
+дернизаций мы с удовольствием разместим  в
+очередном номере Deja VU. Удачи вам.
+   Результат работы картинка "kristina"  в
+текстовом виде:
+</pre>
+<img src=dv08ascr/pic3.gif>
+<pre>
+
+   Уже после написания конвертилки ко  мне
+попали два подобных конвертера. ASCII Con-
+vertor v2.71 by Air/EdelweisS  и конвертор
+by  Jerry/AF. По  качеству  конверсии они,
+примерно, одинаковы, но почему-то  резуль-
+тат работы первого конвертера  сохраняется
+в каком-то непонятном  формате. По  интер-
+фейсу конвертор от Jerry/AF, конечно, луч-
+ше, но конвертер  by  Air/EdelweisS  имеет
+множество  настроек. Результат  конвертера
+от Jerry/AF сохраняется в стандартном фор-
+мате ASCII (как  и  положено), только  без
+маркеров конца строк, вот пример:
+</pre>
+<img src=dv08ascr/pic4.gif>
+<pre>
+   Конверсия достаточно медленная, но  ка-
+чественная. По всей  видимости  здесь  ис-
+пользуется весь символьный набор!
+   Еще есть такой  навороченный  текстовый
+редактор Modern Word, доработанный Eterni-
+ty Industry, в котором есть plugin, позво-
+ляющий конвертить скрины, но  он  работает
+только в регистрированной  версии, поэтому
+желающие могут прикупить этот  редактор  у
+авторов и конвертить, так сказать, "не от-
+ходя от кассы".
+
+           Спасибо за внимание.
+</pre>
