@@ -1,0 +1,9 @@
+P129_SPEAKER_MASK               = $0010 ; const, local, , , CODE, src/speaker.asm:16
+P129_SPEAKER_PORT               = $00FE ; const, local, , , CODE, src/speaker.asm:15
+_p129_speaker_test_tone         = $0000 ; addr, public, , , CODE, src/speaker.asm:18
+p129_speaker_shadow             = $0000 ; addr, local, , , DATA, src/speaker.asm:62
+p129_speaker_stop               = $002E ; addr, local, , , CODE, src/speaker.asm:54
+p129_speaker_test_delay1        = $0010 ; addr, local, , , CODE, src/speaker.asm:29
+p129_speaker_test_delay2        = $0014 ; addr, local, , , CODE, src/speaker.asm:32
+p129_speaker_test_loop          = $000B ; addr, local, , , CODE, src/speaker.asm:26
+p129_speaker_toggle             = $0023 ; addr, local, , , CODE, src/speaker.asm:46
