@@ -188,3 +188,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Range validation uses widened arithmetic; zero-length copies are accepted; same-page overlapping copies use memmove direction.
 - Startup validates a 256-byte copy from the end of one page to another, then validates an overlapping same-page copy.
 - This is a page-local copy primitive, not yet a multi-page linear loader, stack transfer, or banked code execution.
+
+
+### Bootstrap 0.3.24 — multi-page module storage and I/O
+
+- Added a resident page-vector descriptor and allocate/release APIs for modules up to 59 physical pages. Pages are independently allocated; contiguity is not assumed.
+- Added bounded 32-bit-offset read/write APIs. Transfers split at every 16 KiB boundary and map each page through W3, returning to the fixed resident window after each chunk.
+- Startup allocates a 65,600-byte module, writes and reads 64 bytes straddling the 64 KiB boundary, compares them, and releases the pages.
+- This provides multi-page storage and I/O, not yet HDD/FAT16 streaming, stack transfer, or execution of banked code.
