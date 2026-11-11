@@ -18,6 +18,7 @@ extern volatile char p129_rtc_minute[2];
 extern volatile char p129_rtc_second[2];
 extern void p129_hdd_probe(void);
 extern volatile uint8_t p129_hdd_present;
+extern volatile uint8_t p129_hdd_sector_valid;
 extern volatile uint8_t p129_hdd_error;
 extern volatile uint8_t p129_hdd_last_status;
 extern volatile uint8_t p129_hdd_capacity[4];
@@ -174,7 +175,15 @@ void p129_c_entry(void)
         debug_hex8(p129_hdd_capacity[2]);
         debug_hex8(p129_hdd_capacity[1]);
         debug_hex8(p129_hdd_capacity[0]);
-        debug_puts("\r\n[HDD] LBA 63 READ OK; BPB 512B; SIGNATURE 55AA\r\n");
+        if (p129_hdd_sector_valid) {
+            debug_puts("\r\n[HDD] LBA 63 READ OK; BPB 512B; SIGNATURE 55AA\r\n");
+        } else {
+            debug_puts("\r\n[HDD] LBA 63 READ/BPB VALIDATION FAILED; ERROR=");
+            debug_hex8(p129_hdd_error);
+            debug_puts(" STATUS=");
+            debug_hex8(p129_hdd_last_status);
+            debug_puts("\r\n");
+        }
     } else {
         debug_puts("[HDD] PROBE FAILED; ERROR=");
         debug_hex8(p129_hdd_error);
