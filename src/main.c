@@ -47,7 +47,7 @@ static void trdos_print_catalogue(void)
     uint8_t first;
     uint8_t ch;
 
-    debug_puts("[TR-DOS] CATALOGUE FILES\\r\\n");
+    debug_puts("[TR-DOS] CATALOGUE FILES\r\n");
     for (offset = 0; offset < 2048; offset += 16) {
         first = p129_catalogue[offset];
         type = p129_catalogue[offset + 8];
@@ -66,7 +66,7 @@ static void trdos_print_catalogue(void)
             debug_putc('.');
             debug_putc(type);
         }
-        debug_puts("\\r\\n");
+        debug_puts("\r\n");
     }
 }
 
@@ -122,6 +122,7 @@ void p129_c_entry(void)
     debug_hex8(files);
     debug_puts("\r\n");
     debug_puts("[P129] TR-DOS CATALOGUE PRELOADED\r\n");
+    trdos_print_catalogue();
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     for (;;) {}
