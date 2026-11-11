@@ -101,7 +101,11 @@ $MemoryAllocMatch = [regex]::Match($MapText, '(?m)^_p129_page_alloc_topdown\s*=\
 $MemoryFreeMatch = [regex]::Match($MapText, '(?m)^_p129_page_free\s*=\s*\$([0-9A-Fa-f]{4})')
 $MemoryPinMatch = [regex]::Match($MapText, '(?m)^_p129_page_pin\s*=\s*\$([0-9A-Fa-f]{4})')
 $MemoryUnpinMatch = [regex]::Match($MapText, '(?m)^_p129_page_unpin\s*=\s*\$([0-9A-Fa-f]{4})')
-if (-not $MemoryInitMatch.Success -or -not $MemorySelftestMatch.Success -or -not $MemoryAllocMatch.Success -or -not $MemoryFreeMatch.Success -or -not $MemoryPinMatch.Success -or -not $MemoryUnpinMatch.Success) {
+$MemoryReserveMatch = [regex]::Match($MapText, '(?m)^_p129_page_reserve\s*=\s*\$([0-9A-Fa-f]{4})')
+$MemoryRefcountMatch = [regex]::Match($MapText, '(?m)^_p129_page_refcount\s*=\s*\$([0-9A-Fa-f]{4})')
+$MemoryReservedMatch = [regex]::Match($MapText, '(?m)^_p129_page_is_reserved\s*=\s*\$([0-9A-Fa-f]{4})')
+$MemoryFreeCountMatch = [regex]::Match($MapText, '(?m)^_p129_memory_free_count\s*=\s*\$([0-9A-Fa-f]{4})')
+if (-not $MemoryInitMatch.Success -or -not $MemorySelftestMatch.Success -or -not $MemoryAllocMatch.Success -or -not $MemoryFreeMatch.Success -or -not $MemoryPinMatch.Success -or -not $MemoryUnpinMatch.Success -or -not $MemoryReserveMatch.Success -or -not $MemoryRefcountMatch.Success -or -not $MemoryReservedMatch.Success -or -not $MemoryFreeCountMatch.Success) {
     throw "Physical page manager API symbols are missing from $MapFile"
 }
 $UiInitAddress = [Convert]::ToInt32($UiInitMatch.Groups[1].Value, 16)
@@ -124,7 +128,7 @@ if ($CEntryAddress -lt 0x6000 -or $CEntryAddress -ge (0x6000 + $ResidentSize)) {
 if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
     throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
-$MemoryAddresses = @($MemoryInitMatch, $MemorySelftestMatch, $MemoryAllocMatch, $MemoryFreeMatch, $MemoryPinMatch, $MemoryUnpinMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
+$MemoryAddresses = @($MemoryInitMatch, $MemorySelftestMatch, $MemoryAllocMatch, $MemoryFreeMatch, $MemoryPinMatch, $MemoryUnpinMatch, $MemoryReserveMatch, $MemoryRefcountMatch, $MemoryReservedMatch, $MemoryFreeCountMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
 foreach ($MemoryAddress in $MemoryAddresses) {
     if ($MemoryAddress -lt 0x6000 -or $MemoryAddress -ge (0x6000 + $ResidentSize)) {
         throw ("Memory manager API entry point is outside the loaded resident image: #{0:X4}" -f $MemoryAddress)
