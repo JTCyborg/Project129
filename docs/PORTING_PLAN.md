@@ -43,6 +43,10 @@ A dependency-driven reorder requires a recorded reason and an explicit interface
 - RTC is DS12887 through SMUC and serviced by the ATM host.
 - Any NeoGS/companion CPU has an independent RAM address space and must access host-owned devices only through the agreed host transport/DMA.
 - Debug channel is port `#EF`; retain stable, parseable stage markers.
+- Fixed resident layout: W0 is ROM; W1/P5 contains remap-critical resident code/data; W2/P2 contains the resident stack/control state; W3 is the only remap target while the resident code and stack remain fixed.
+- W3/UI ownership sequence: UI ACTIVE -> QUIESCED -> HANDOFF ownership -> QUIESCED with no owner -> UI ACTIVE. Reject transitions while the UI owns a busy W3 lease. Snapshot/rollback must restore the complete ownership tuple and software mapping.
+- During QUIESCED/HANDOFF, no UI console or other W3-dependent UI operation may run. A remap is never performed while the executing code or active stack resides in the target window.
+- ATM page mapper contract: window ports are `#3FF7/#7FF7/#BFF7/#FFF7`; physical page encoding is `#7F - page`. The software shadow/transaction layer must validate protected windows before any hardware OUT.
 - Do not activate live IRQ delivery until the ATM interrupt gate, vector, frame and dispatcher are independently validated.
 
 ## Program-size and banking acceptance
