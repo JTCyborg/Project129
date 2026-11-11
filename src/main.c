@@ -62,16 +62,21 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.4-TRDOS-ERRSP-GUARD\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.5-TRDOS-LEGACY-ORDER\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
-    /* Interface is initialized first, before TR-DOS and other services. */
+    /*
+     * Match the proven Project127 boot contract: read the TR-DOS catalogue
+     * while the legacy ROM/shadow/video mapping is still untouched.
+     * Startup diagnostics remain available on #EF during this early phase.
+     */
+    debug_puts("[TRDOS] DIRECTORY READ BEGIN\r\n");
+    result = p129_trdos_preload();
+
+    /* Initialize the visible ATM console after the ROM disk operation. */
     p129_ui_init();
     p129_ui_ready = 1;
     debug_puts("[P129] ATM RG6 80X25 UI READY\r\n");
-
-    debug_puts("[TRDOS] DIRECTORY READ BEGIN\r\n");
-    result = p129_trdos_preload();
     if (result != 0) {
         debug_puts("[TRDOS] DIRECTORY READ FAILED\r\n");
         debug_puts("[TRDOS] ROM ERROR #5D0F=");

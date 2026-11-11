@@ -24,10 +24,7 @@ _p129_trdos_preload:
         ex      af,af'
 
         ld      (p129_trdos_saved_sp),sp
-        ; #3D2F/UI setup may leave ERR_SP (#5C3D) in the unsafe #AAxx area.
-        ; Save it and install a private TR-DOS error-return frame on our scratch stack.
-        ld      hl,(05C3Dh)
-        ld      (p129_trdos_saved_err_sp),hl
+        ; Isolated scratch stack, matching the working Project127 reader.
         ld      sp,0B7F0h
         xor     a
         ld      (p129_trdos_io_error),a
@@ -35,29 +32,6 @@ _p129_trdos_preload:
         ld      (p129_trdos_sector),a
         ld      hl,0C800h
         ld      (p129_trdos_buffer_ptr),hl
-
-        ; UI initialization has already executed the documented #0177/#3D2F
-        ; DOSEN setup and selected W0=#BF. Project127 calls #3D13 directly
-        ; after that setup; do not invoke #3D2F a second time here.
-
-p129_trdos_map_ready:
-        ; Re-establish the complete fixed resident map after UI initialization.
-        ; W0=#BF selects the DOSEN-controlled TR-DOS ROM; W1=P5 contains
-        ; this executing resident image; W2=P2 contains the live/scratch
-        ; stacks; W3=P0 contains the #C800 directory staging buffer.
-        ; Explicitly restore the resident code and stack windows before ROM entry.
-        ld      a,0BFh
-        ld      bc,03FF7h
-        out     (c),a
-        ld      a,07Ah
-        ld      bc,07FF7h
-        out     (c),a
-        ld      a,07Dh
-        ld      bc,0BFF7h
-        out     (c),a
-        ld      a,07Fh
-        ld      bc,0FFF7h
-        out     (c),a
 
 p129_trdos_read_sector:
         ld      a,(p129_trdos_sector)
@@ -82,15 +56,7 @@ p129_trdos_read_sector:
         out     (c),a
         ld      b,1
         ld      c,5
-        ; ERR_SP is the stack pointer to restore if TR-DOS takes its error path.
-        ; Put a private return address there so an error cannot unwind into #AAxx
-        ; or into the C caller's unrelated stack frame.
-        ld      hl,p129_trdos_rom_error
-        push    hl
-        ld      (05C3Dh),sp
-        ld      hl,(p129_trdos_buffer_ptr)
         call    03D13h
-        pop     hl                      ; discard private frame on normal return
 
         ld      bc,00EFh
         ld      a,'r'
@@ -120,12 +86,6 @@ p129_trdos_read_sector:
         ld      (p129_trdos_sector),a
         jr      p129_trdos_read_sector
 
-p129_trdos_rom_error:
-        ; TR-DOS restored ERR_SP and returned through the private frame.
-        ld      a,1
-        ld      (p129_trdos_result),a
-        jr      p129_trdos_restore
-
 p129_trdos_read_complete:
         xor     a
         ld      (p129_trdos_result),a
@@ -137,8 +97,6 @@ p129_trdos_read_failed:
 
 p129_trdos_restore:
         ld      sp,(p129_trdos_saved_sp)
-        ld      hl,(p129_trdos_saved_err_sp)
-        ld      (05C3Dh),hl
         ex      af,af'
         pop     af
         ex      af,af'
@@ -161,7 +119,6 @@ p129_trdos_restore:
         ret
 
 p129_trdos_saved_sp:     dw 0
-p129_trdos_saved_err_sp:  dw 0
 p129_trdos_buffer_ptr:   dw 0C800h
 p129_trdos_sector:       db 0
 p129_trdos_io_error:     db 0
