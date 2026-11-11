@@ -194,15 +194,15 @@ void p129_c_entry(void)
         debug_hex8(p129_hdd_last_status);
         debug_puts("\r\n");
     }
-    debug_puts("[RANGE] UINT32 API SELFTEST BEGIN\\r\\n");
+    debug_puts("[RANGE] UINT32 API SELFTEST BEGIN\r\n");
     {
         uint8_t range_error = p129_range_selftest();
         if (range_error == 0) {
-            debug_puts("[RANGE] UINT32 API SELFTEST PASS; LIMIT=00100000\\r\\n");
+            debug_puts("[RANGE] UINT32 API SELFTEST PASS; LIMIT=00100000\r\n");
         } else {
             debug_puts("[RANGE] UINT32 API SELFTEST FAILED; TEST=");
             debug_hex8(range_error);
-            debug_puts("\\r\\n");
+            debug_puts("\r\n");
         }
     }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
