@@ -15,6 +15,9 @@ static uint8_t p129_map_txn_new_page;
 static uint8_t p129_map_txn_old_page;
 static uint8_t p129_map_txn_snapshot[P129_MAP_WINDOW_COUNT];
 static uint8_t p129_map_w3_lease_active;
+#define P129_MAP_BANK_DEPTH_MAX 8u
+static uint8_t p129_map_bank_stack[P129_MAP_BANK_DEPTH_MAX];
+static uint8_t p129_map_bank_depth;
 extern uint8_t p129_ui_quiesce(void);
 extern uint8_t p129_ui_handoff_begin(void);
 extern uint8_t p129_ui_handoff_end(void);
@@ -32,6 +35,8 @@ uint8_t p129_map_init(void)
     p129_map_shadow[3] = 0u;
     p129_map_txn_active = 0u;
     p129_map_txn_committed = 0u;
+    p129_map_w3_lease_active = 0u;
+    p129_map_bank_depth = 0u;
     p129_map_ready = 1u;
     return 0u;
 }
@@ -174,6 +179,82 @@ uint8_t p129_map_w3_lease_selftest(void)
     if (p129_map_w3_lease_end() != 0u) return 5u;
     if (p129_map_get_window(3u) != 0u || p129_page_refcount(page) != 0u) return 6u;
     if (p129_page_free(page) != 0u) return 7u;
+    return 0u;
+}
+
+/* Nested bank ownership stack. W3 remains software-shadow only. */
+uint8_t p129_map_w3_bank_enter(uint8_t page)
+{
+    if (!p129_map_ready || page >= P129_MEMORY_PAGE_COUNT) return 1u;
+    if (!p129_page_is_allocated(page) || p129_page_is_reserved(page)) return 2u;
+    if (p129_map_bank_depth >= P129_MAP_BANK_DEPTH_MAX) return 3u;
+    if (p129_map_bank_depth == 0u) {
+        if (p129_map_w3_lease_active) return 4u;
+        if (p129_map_w3_lease_begin(page) != 0u) return 5u;
+        p129_map_bank_stack[0] = page;
+        p129_map_bank_depth = 1u;
+        return 0u;
+    }
+    if (p129_map_shadow[3] == page) return 6u;
+    if (p129_page_pin(page) != 0u) return 7u;
+    p129_map_bank_stack[p129_map_bank_depth] = page;
+    p129_map_shadow[3] = page;
+    ++p129_map_bank_depth;
+    return 0u;
+}
+
+uint8_t p129_map_w3_bank_leave(void)
+{
+    uint8_t current, previous;
+    if (!p129_map_ready || p129_map_bank_depth == 0u) return 1u;
+    if (p129_map_bank_depth == 1u) {
+        p129_map_bank_depth = 0u;
+        if (p129_map_w3_lease_end() != 0u) {
+            p129_map_bank_depth = 1u;
+            return 2u;
+        }
+        return 0u;
+    }
+    current = p129_map_bank_stack[p129_map_bank_depth - 1u];
+    previous = p129_map_bank_stack[p129_map_bank_depth - 2u];
+    if (p129_map_shadow[3] != current) return 3u;
+    if (p129_page_unpin(current) != 0u) return 4u;
+    p129_map_shadow[3] = previous;
+    --p129_map_bank_depth;
+    return 0u;
+}
+
+uint8_t p129_map_w3_bank_depth(void)
+{
+    return p129_map_bank_depth;
+}
+
+uint8_t p129_map_w3_bank_selftest(void)
+{
+    uint8_t p1, p2, p3;
+    if (p129_map_bank_depth != 0u || p129_map_w3_lease_active) return 1u;
+    p1 = p129_page_alloc_topdown();
+    p2 = p129_page_alloc_topdown();
+    p3 = p129_page_alloc_topdown();
+    if (p1 == P129_MEMORY_PAGE_NONE || p2 == P129_MEMORY_PAGE_NONE ||
+        p3 == P129_MEMORY_PAGE_NONE) return 2u;
+    if (p129_map_w3_bank_enter(p1) != 0u) return 3u;
+    if (p129_map_w3_bank_enter(p2) != 0u) return 4u;
+    if (p129_map_w3_bank_enter(p3) != 0u) return 5u;
+    if (p129_map_w3_bank_depth() != 3u || p129_map_get_window(3u) != p3) return 6u;
+    if (p129_page_refcount(p1) != 1u || p129_page_refcount(p2) != 1u ||
+        p129_page_refcount(p3) != 1u) return 7u;
+    if (p129_map_w3_bank_leave() != 0u) return 8u;
+    if (p129_map_get_window(3u) != p2 || p129_map_w3_bank_depth() != 2u ||
+        p129_page_refcount(p3) != 0u || p129_page_refcount(p2) != 1u) return 9u;
+    if (p129_map_w3_bank_leave() != 0u) return 10u;
+    if (p129_map_get_window(3u) != p1 || p129_map_w3_bank_depth() != 1u ||
+        p129_page_refcount(p2) != 0u || p129_page_refcount(p1) != 1u) return 11u;
+    if (p129_map_w3_bank_leave() != 0u) return 12u;
+    if (p129_map_get_window(3u) != 0u || p129_map_w3_bank_depth() != 0u ||
+        p129_page_refcount(p1) != 0u) return 13u;
+    if (p129_page_free(p1) != 0u || p129_page_free(p2) != 0u ||
+        p129_page_free(p3) != 0u) return 14u;
     return 0u;
 }
 

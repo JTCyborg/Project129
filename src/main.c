@@ -30,6 +30,7 @@ extern uint8_t p129_memory_free_count(void);
 extern uint8_t p129_map_init(void);
 extern uint8_t p129_map_selftest(void);
 extern uint8_t p129_map_w3_lease_selftest(void);
+extern uint8_t p129_map_w3_bank_selftest(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
