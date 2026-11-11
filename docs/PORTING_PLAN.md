@@ -212,3 +212,10 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - This is compatible with the fixed ATM mapping: the lower part of the image resides in W1/P5 and the upper part in W2/P2; W2 remains mapped while the resident stack uses the top of the window at #BFFF.
 - The build guard now allows up to 20,480 bytes and explicitly rejects an image whose end reaches beyond #B000. It does not enlarge the physical page size, alter W3, or permit the image to overwrite the BASIC loader.
 - The user's 0.3.25 link output was 19,414 bytes, which ends at #ACD6 and leaves 1,066 bytes before #B000. Rebuild/runtime confirmation of this corrected guard remains pending.
+
+
+### Bootstrap 0.3.26 — FAT16 BPB/geometry diagnostics
+
+- Exposes resident debug formatting helpers and emits the raw BPB geometry through port #EF before returning FAT16 error 02, and after calculating the data-region start and cluster count.
+- The diagnostic includes bytes/sector, sectors/cluster, reserved sectors, FAT count, root entries, 16/32-bit total-sector fields, FAT size, DATA_START and computed cluster count. This distinguishes malformed BPB fields from a volume that is genuinely outside FAT16 cluster-count limits.
+- No FAT16 acceptance rule has been relaxed and no file-loading behavior has been changed. Build and runtime confirmation are pending.

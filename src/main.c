@@ -81,6 +81,11 @@ static void debug_hex8(uint8_t value)
 }
 
 
+void p129_debug_puts(const char *text) { debug_puts(text); }
+void p129_debug_hex8(uint8_t value) { debug_hex8(value); }
+void p129_debug_hex16(uint16_t value) { debug_hex8((uint8_t)(value >> 8)); debug_hex8((uint8_t)value); }
+void p129_debug_hex32(uint32_t value) { p129_debug_hex16((uint16_t)(value >> 16)); p129_debug_hex16((uint16_t)value); }
+
 static void trdos_print_catalogue(void)
 {
     uint16_t offset;
@@ -143,7 +148,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.25-FAT16-MODULE-LOADER\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.26-FAT16-BPB-DIAGNOSTICS\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */

@@ -1,5 +1,9 @@
 #include <stdint.h>
 #include "bank.h"
+extern void p129_debug_puts(const char *text);
+extern void p129_debug_hex8(uint8_t value);
+extern void p129_debug_hex16(uint16_t value);
+extern void p129_debug_hex32(uint32_t value);
 #define P129_FAT16_PARTITION_LBA 63UL
 #define P129_FAT16_SECTOR_SIZE 512u
 #define P129_FAT16_MAX_FILE (P129_BANK_MAX_PAGES * P129_BANK_PAGE_SIZE)
@@ -16,7 +20,7 @@ static uint32_t p129_fat16_u32(const volatile uint8_t *p) {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
-static uint8_t p129_fat16_read(uint32_t lba) {
+static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,\n                            uint8_t fats, uint16_t roots, uint16_t total16,\n                            uint32_t total32, uint16_t fatsz,\n                            uint32_t data_start, uint32_t clusters) {\n    p129_debug_puts("[FAT16] BPB BPS="); p129_debug_hex16(bps);\n    p129_debug_puts(" SPC="); p129_debug_hex8(spc);\n    p129_debug_puts(" RESERVED="); p129_debug_hex16(reserved);\n    p129_debug_puts(" FATS="); p129_debug_hex8(fats);\n    p129_debug_puts(" ROOT_ENTRIES="); p129_debug_hex16(roots);\n    p129_debug_puts(" TOTAL16="); p129_debug_hex16(total16);\n    p129_debug_puts(" TOTAL32="); p129_debug_hex32(total32);\n    p129_debug_puts(" FAT_SIZE="); p129_debug_hex16(fatsz);\n    p129_debug_puts("\\r\\n[FAT16] DATA_START="); p129_debug_hex32(data_start);\n    p129_debug_puts(" CLUSTERS="); p129_debug_hex32(clusters);\n    p129_debug_puts("\\r\\n");\n}\n\nstatic uint8_t p129_fat16_read(uint32_t lba) {
     if (lba > 0x0FFFFFFFUL) return 1u;
     p129_hdd_lba[0]=(uint8_t)lba;
     p129_hdd_lba[1]=(uint8_t)(lba>>8);
@@ -34,7 +38,7 @@ uint8_t p129_fat16_load_root_file(const char *name83,
     uint8_t spc, fats, i, found=0u;
     uint16_t reserved, root_entries, fat_size, root_sectors;
     uint16_t start_cluster=0u, cluster;
-    uint32_t file_size=0UL, total_sectors, fat_start, root_start;
+    uint32_t file_size=0UL, total_sectors, total32, fat_start, root_start;\n    uint16_t bps, total16;
     uint32_t data_start, volume_end, cluster_count, cluster_bytes;
     uint32_t root_index, root_lba, file_offset=0UL, clusters_needed, step;
     volatile uint8_t *sector=p129_hdd_sector;
