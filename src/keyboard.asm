@@ -24,10 +24,10 @@ PUBLIC _p129_keyboard_r4
 PUBLIC _p129_keyboard_r5
 PUBLIC _p129_keyboard_matrix
 
-P129_KBD_PORT              EQU #FE
+P129_KBD_PORT              EQU 0FEh
 P129_KBD_MODE_XT           EQU 2
 P129_KBD_MODE_EVENT        EQU 3
-P129_KBD_ROW_MASK          EQU #1F
+P129_KBD_ROW_MASK          EQU 01Fh
 
 _p129_keyboard_init:
         xor     a
@@ -41,7 +41,7 @@ _p129_keyboard_init:
         ld      hl,_p129_keyboard_matrix
         ld      de,_p129_keyboard_previous
         ld      b,8
-        ld      a,#1F
+        ld      a,01Fh
 p129_kbd_init_clear:
         ld      (hl),a
         inc     hl
@@ -63,11 +63,11 @@ p129_kbd_init_done:
 ; A=2 or A=3. Carry indicates handshake failure.
 p129_kbd_set_mode:
         ld      (_p129_keyboard_requested_mode),a
-        ld      bc,#55FE
+        ld      bc,055FEh
         in      a,(c)
-        cp      #AA
+        cp      0AAh
         jr      nz,p129_kbd_mode_fail
-        ld      bc,#08FE
+        ld      bc,008FEh
         in      a,(c)
         cp      8
         jr      nz,p129_kbd_mode_fail
@@ -75,7 +75,7 @@ p129_kbd_set_mode:
         ld      b,a
         ld      c,P129_KBD_PORT
         in      a,(c)
-        cp      #FF
+        cp      0FFh
         jr      nz,p129_kbd_mode_fail
         or      a
         ret
@@ -93,7 +93,7 @@ _p129_keyboard_poll:
         ld      a,P129_KBD_MODE_EVENT
         call    p129_kbd_set_mode
         jr      c,p129_kbd_xt_recover
-        ld      bc,#00FE
+        ld      bc,000FEh
         in      a,(c)
         ld      (_p129_keyboard_lastscan),a
         ld      a,P129_KBD_MODE_XT
@@ -138,16 +138,16 @@ p129_kbd_xt_recover:
         ret
 
 p129_kbd_read_mode2:
-        ld      bc,#00FE
+        ld      bc,000FEh
         in      a,(c)
         ld      (_p129_keyboard_r2),a
-        ld      bc,#40FE
+        ld      bc,040FEh
         in      a,(c)
         ld      (_p129_keyboard_r3),a
-        ld      bc,#80FE
+        ld      bc,080FEh
         in      a,(c)
         ld      (_p129_keyboard_r4),a
-        ld      bc,#C0FE
+        ld      bc,0C0FEh
         in      a,(c)
         ld      (_p129_keyboard_r5),a
         ret
@@ -185,7 +185,7 @@ p129_kbd_scan_matrix:
         push    bc
         push    de
         push    hl
-        ld      bc,#00FE
+        ld      bc,000FEh
         ld      hl,p129_kbd_row_selectors
         ld      de,_p129_keyboard_matrix
         ld      a,8
@@ -207,7 +207,7 @@ p129_kbd_scan_loop:
 
 SECTION DATA
 p129_kbd_row_selectors:
-        db #FE,#FD,#FB,#F7,#EF,#DF,#BF,#7F
+        db 0FEh,0FDh,0FBh,0F7h,0EFh,0DFh,0BFh,07Fh
 
 _p129_keyboard_xt_active:
         db 0
@@ -224,14 +224,14 @@ _p129_keyboard_r4:
 _p129_keyboard_r5:
         db 0
 _p129_keyboard_prev_r3:
-        db #FF
+        db 0FFh
 _p129_keyboard_prev_r4:
-        db #FF
+        db 0FFh
 _p129_keyboard_prev_r5:
-        db #FF
+        db 0FFh
 _p129_keyboard_snapshot_valid:
         db 0
 _p129_keyboard_matrix:
-        ds 8,#1F
+        ds 8,01Fh
 _p129_keyboard_previous:
-        ds 8,#1F
+        ds 8,01Fh
