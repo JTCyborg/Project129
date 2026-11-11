@@ -196,3 +196,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Added bounded 32-bit-offset read/write APIs. Transfers split at every 16 KiB boundary and map each page through W3, returning to the fixed resident window after each chunk.
 - Startup allocates a 65,600-byte module, writes and reads 64 bytes straddling the 64 KiB boundary, compares them, and releases the pages.
 - This provides multi-page storage and I/O, not yet HDD/FAT16 streaming, stack transfer, or execution of banked code.
+
+
+### Bootstrap 0.3.25 — FAT16 root-file streaming into banked modules
+
+- Adds a read-only FAT16 file loader for ordinary 8.3 files in the fixed root directory. It rereads and validates the partition BPB, derives FAT/root/data regions, validates FAT16 cluster-count geometry and LBA28/device bounds, locates the requested 11-byte name, and follows the file's cluster chain with a file-size-derived upper bound.
+- Each data sector is read by the existing Nemo IDE PIO transport into the resident sector buffer and copied to the allocated module through the multi-page W3 API. The module remains allocated after a successful load; the startup target is root file IO.SYS.
+- This milestone does not support subdirectories, long filenames, FAT12/FAT32, writes, or executing the loaded image. Cluster traversal is bounded by the required cluster count and validates each referenced cluster before reading it.
+- Build/runtime confirmation is pending. Expected runtime evidence is [HDD] FAT16 FILE LOAD PASS with exact byte size and allocated page count.

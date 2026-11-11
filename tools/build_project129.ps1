@@ -42,8 +42,8 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.24-MULTIPAGE-MODULE-IO"
-foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.25-FAT16-MODULE-LOADER"
+foreach ($Source in @("src/main.c", "src/fat16.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
@@ -52,7 +52,7 @@ Write-Host "[P129 BUILD] ZCC=$Zcc"
 # at address zero unless the Z80ASM linker is explicitly relocated. Since TR-DOS
 # loads P129BOOT.C at #6000, relocate the complete linked image to #6000 so every
 # CALL/JR/data reference emitted by SDCC addresses the resident image correctly.
-& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/memory.c src/map.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/fat16.c src/memory.c src/map.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) {
     $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
@@ -88,6 +88,8 @@ $RtcProbeMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_probe\s*=\s*\$([0-9A-F
 $RtcReadMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_read_current\s*=\s*\$([0-9A-Fa-f]{4})')
 $HddProbeMatch = [regex]::Match($MapText, '(?m)^_p129_hdd_probe\s*=\s*\$([0-9A-Fa-f]{4})')
 $HddListMatch = [regex]::Match($MapText, '(?m)^_p129_hdd_list_root\s*=\s*\$([0-9A-Fa-f]{4})')
+$Fat16LoadMatch = [regex]::Match($MapText, '(?m)^_p129_fat16_load_root_file\s*=\s*\$([0-9A-Fa-f]{4})')
+$HddReadCMatch = [regex]::Match($MapText, '(?m)^_p129_hdd_read_sector_c\s*=\s*\$([0-9A-Fa-f]{4})')
 $RangeValidateMatch = [regex]::Match($MapText, '(?m)^_p129_range_validate\s*=\s*\$([0-9A-Fa-f]{4})')
 $RangeSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_range_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $KeyboardInitMatch = [regex]::Match($MapText, '(?m)^_p129_keyboard_init\s*=\s*\$([0-9A-Fa-f]{4})')
@@ -97,6 +99,7 @@ if (-not $UiLeaseTestMatch.Success -or -not $UiLeaseQuiesceMatch.Success -or -no
 if (-not $RtcProbeMatch.Success -or -not $RtcReadMatch.Success) { throw "DS12887 RTC entry points are missing from $MapFile" }
 if (-not $HddProbeMatch.Success) { throw "Nemo IDE entry point _p129_hdd_probe is missing from $MapFile" }
 if (-not $HddListMatch.Success) { throw "FAT16 entry point _p129_hdd_list_root is missing from $MapFile" }
+if (-not $Fat16LoadMatch.Success -or -not $HddReadCMatch.Success) { throw "FAT16 banked-file loader or C sector-read bridge is missing from $MapFile" }
 if (-not $RangeValidateMatch.Success -or -not $RangeSelftestMatch.Success) { throw "UINT32 range API entry points are missing from $MapFile" }
 if (-not $KeyboardInitMatch.Success -or -not $KeyboardPollMatch.Success) { throw "ATM keyboard entry points are missing from $MapFile" }
 $SpeakerTestMatch = [regex]::Match($MapText, '(?m)^_p129_speaker_test_tone\s*=\s*\$([0-9A-Fa-f]{4})')
@@ -158,7 +161,7 @@ if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
     throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
 $MemoryAddresses = @($MemoryInitMatch, $MemorySelftestMatch, $MemoryAllocMatch, $MemoryFreeMatch, $MemoryPinMatch, $MemoryUnpinMatch, $MemoryReserveMatch, $MemoryRefcountMatch, $MemoryReservedMatch, $MemoryAllocatedMatch, $MemoryFreeCountMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
-$MapAddresses = @($MapInitMatch, $MapSelftestMatch, $MapPortMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch, $BankEnterMatch, $BankLeaveMatch, $BankSelftestMatch, $MapHwWriteMatch, $MapHwSelftestMatch, $PageCopyMatch, $PageCopySelftestMatch, $BankModuleAllocMatch, $BankModuleReadMatch, $BankModuleWriteMatch, $BankModuleSelftestMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
+$MapAddresses = @($Fat16LoadMatch, $HddReadCMatch, $MapInitMatch, $MapSelftestMatch, $MapPortMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch, $BankEnterMatch, $BankLeaveMatch, $BankSelftestMatch, $MapHwWriteMatch, $MapHwSelftestMatch, $PageCopyMatch, $PageCopySelftestMatch, $BankModuleAllocMatch, $BankModuleReadMatch, $BankModuleWriteMatch, $BankModuleSelftestMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
 foreach ($MapAddress in $MapAddresses) {
     if ($MapAddress -lt 0x6000 -or $MapAddress -ge (0x6000 + $ResidentSize)) {
         throw ("Software mapper API entry point is outside the loaded resident image: #{0:X4}" -f $MapAddress)
