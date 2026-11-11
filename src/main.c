@@ -25,9 +25,9 @@ static void debug_puts(const char *text)
     }
 }
 
-void main(void)
+void p129_c_entry(void)
 {
-    /* First C-side output: confirms the loaded resident reached C main(). */
+    /* First C-side output: confirms the assembly-to-C handoff. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
     debug_puts("[P129] BUILD: BOOTSTRAP-0.1.0\r\n");
