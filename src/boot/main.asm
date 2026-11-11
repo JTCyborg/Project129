@@ -69,4 +69,4 @@ p129_boot_image:
         INCBIN  "build/P129BOOT.bin"
 p129_boot_image_end:
         ASSERT  p129_boot_image_end > p129_boot_image
-        SAVETRD "disk_A.trd","P129BOOT.C",p129_boot_image,p129_boot_image_end-p129_boot_image
+        SAVETRD "disk_A.trd","p129boot.C",p129_boot_image,p129_boot_image_end-p129_boot_image

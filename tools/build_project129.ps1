@@ -59,7 +59,7 @@ $ResidentSize = (Get-Item $Resident).Length
 if ($ResidentSize -le 0 -or $ResidentSize -gt 16384) {
     throw "Bootstrap resident image has invalid size: $ResidentSize bytes"
 }
-Write-Host "[P129 BUILD] RESIDENT=P129BOOT.C LOAD=#6000 SIZE=$ResidentSize"
+Write-Host "[P129 BUILD] RESIDENT=p129boot.C LOAD=#6000 SIZE=$ResidentSize"
 
 Write-Host "[P129 BUILD] SJASMPLUS=$SjAsmPlus"
 & $SjAsmPlus --dirbol src/boot/main.asm
