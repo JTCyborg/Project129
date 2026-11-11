@@ -42,12 +42,8 @@ p129_ui_ports_open:
         ld      a,0BFh
         ld      bc,03FF7h
         out     (c),a
-        ld      a,P129_UI_PAGE7
-        ld      bc,07FF7h
-        out     (c),a
-        ld      a,P129_UI_PAGE3
-        ld      bc,0FFF7h
-        out     (c),a
+        ; Keep W1/P5 mapped: resident code is loaded at #6000 in W1.
+        ; The UI accesses both video planes through W3 only.
 
         ; ATM RG6 text mode trampoline, identical to Project127 reference.
         ld      hl,0FFECh
@@ -158,17 +154,21 @@ p129_ui_done:
         ret
 
 p129_ui_clear:
-        call    p129_ui_map_pages
-        ld      hl,041C0h
-        ld      de,041C1h
+        ; Character plane: physical page 7 mapped into W3 only.
+        call    p129_ui_map_chars
+        ld      hl,0C1C0h
+        ld      de,0C1C1h
         ld      (hl),32
         ld      bc,063Fh
         ldir
-        ld      hl,061C0h
-        ld      de,061C1h
+        ld      hl,0E1C0h
+        ld      de,0E1C1h
         ld      (hl),32
         ld      bc,063Fh
         ldir
+
+        ; Attribute plane: switch W3 to physical page 3.
+        call    p129_ui_map_attrs
         ld      hl,0E1C0h
         ld      de,0E1C1h
         ld      (hl),047h
@@ -246,7 +246,6 @@ p129_ui_write_char:
         ld      (p129_ui_write_row),a
         ld      a,e
         ld      (p129_ui_write_col),a
-        call    p129_ui_map_pages
         ld      a,(p129_ui_write_row)
         ld      l,a
         ld      h,0
@@ -275,26 +274,35 @@ p129_ui_write_char:
         ld      a,04Fh
 p129_ui_attr_ready:
         ld      (p129_ui_attr),a
+        ; W3 is the only remapped window. This keeps the resident code in
+        ; W1/#6000 executable while both video planes are updated.
+        call    p129_ui_map_chars
         ld      hl,(p129_ui_offset)
         ld      a,(p129_ui_parity)
         or      a
-        jr      nz,p129_ui_write_odd
-        ld      de,04000h
+        jr      nz,p129_ui_write_odd_char
+        ld      de,0C000h
         add     hl,de
         ld      a,(p129_ui_char)
         ld      (hl),a
+        jr      p129_ui_write_attr
+p129_ui_write_odd_char:
+        ld      de,0E000h
+        add     hl,de
+        ld      a,(p129_ui_char)
+        ld      (hl),a
+p129_ui_write_attr:
+        call    p129_ui_map_attrs
         ld      hl,(p129_ui_offset)
+        ld      a,(p129_ui_parity)
+        or      a
+        jr      nz,p129_ui_write_odd_attr
         ld      de,0E000h
         add     hl,de
         ld      a,(p129_ui_attr)
         ld      (hl),a
         jr      p129_ui_write_done
-p129_ui_write_odd:
-        ld      de,06000h
-        add     hl,de
-        ld      a,(p129_ui_char)
-        ld      (hl),a
-        ld      hl,(p129_ui_offset)
+p129_ui_write_odd_attr:
         ld      de,0C000h
         add     hl,de
         inc     hl
@@ -326,15 +334,29 @@ p129_ui_scroll:
         push    bc
         push    de
         push    hl
-        call    p129_ui_map_pages
-        ld      hl,04500h
-        ld      de,044C0h
+        ; Scroll character planes while W3 maps page 7.
+        call    p129_ui_map_chars
+        ld      hl,0C500h
+        ld      de,0C4C0h
         ld      bc,00300h
         ldir
-        ld      hl,06500h
-        ld      de,064C0h
+        ld      hl,0E500h
+        ld      de,0E4C0h
         ld      bc,00300h
         ldir
+        ld      hl,0C7C0h
+        ld      de,0C7C1h
+        ld      (hl),32
+        ld      bc,0003Fh
+        ldir
+        ld      hl,0E7C0h
+        ld      de,0E7C1h
+        ld      (hl),32
+        ld      bc,0003Fh
+        ldir
+
+        ; Scroll and clear attribute planes while W3 maps page 3.
+        call    p129_ui_map_attrs
         ld      hl,0E500h
         ld      de,0E4C0h
         ld      bc,00300h
@@ -342,16 +364,6 @@ p129_ui_scroll:
         ld      hl,0C501h
         ld      de,0C4C1h
         ld      bc,00300h
-        ldir
-        ld      hl,047C0h
-        ld      de,047C1h
-        ld      (hl),32
-        ld      bc,0003Fh
-        ldir
-        ld      hl,067C0h
-        ld      de,067C1h
-        ld      (hl),32
-        ld      bc,0003Fh
         ldir
         ld      hl,0E7C0h
         ld      de,0E7C1h
@@ -370,19 +382,21 @@ p129_ui_scroll:
         pop     af
         ret
 
-p129_ui_map_pages:
+; Map only W3. W1 contains the resident image at #6000 and must never
+; be switched while executing this module.
+p129_ui_map_chars:
         ld      a,P129_UI_PAGE7
-        ld      bc,07FF7h
+        ld      bc,0FFF7h
         out     (c),a
+        ret
+
+p129_ui_map_attrs:
         ld      a,P129_UI_PAGE3
         ld      bc,0FFF7h
         out     (c),a
         ret
 
 p129_ui_restore_pages:
-        ld      a,P129_UI_HOST_PAGE5
-        ld      bc,07FF7h
-        out     (c),a
         ld      a,P129_UI_HOST_PAGE0
         ld      bc,0FFF7h
         out     (c),a
