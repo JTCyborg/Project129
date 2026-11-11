@@ -134,12 +134,6 @@ void p129_c_entry(void)
     p129_ui_init();
     p129_ui_ready = 1;
     debug_puts("[P129] ATM RG6 80X25 UI READY\r\n");
-    debug_puts("[KBD] INIT\r\n");
-    if (p129_keyboard_init()) {
-        debug_puts("[KBD] ATM XT ACTIVE\r\n");
-    } else {
-        debug_puts("[KBD] ZX FALLBACK\r\n");
-    }
     result = p129_trdos_result;
     if (result != 0) {
         debug_puts("[TRDOS] DIRECTORY READ FAILED\r\n");
@@ -220,6 +214,13 @@ void p129_c_entry(void)
             debug_puts("\r\n");
         }
     }
+    debug_puts("[KBD] INIT\r\n");
+    if (p129_keyboard_init()) {
+        debug_puts("[KBD] ATM XT ACTIVE\r\n");
+    } else {
+        debug_puts("[KBD] ZX FALLBACK\r\n");
+    }
+
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     rtc_poll_divider = 0;
