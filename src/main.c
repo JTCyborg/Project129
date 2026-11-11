@@ -23,6 +23,13 @@ extern uint8_t p129_keyboard_init(void);
 extern uint8_t p129_keyboard_poll(void);
 extern void p129_keyboard_delay_window(void);
 extern void p129_speaker_test_tone(void);
+extern uint8_t p129_memory_init(void);
+extern uint8_t p129_memory_selftest(void);
+extern uint8_t p129_memory_free_count(void);
+extern uint8_t p129_page_alloc_topdown(void);
+extern uint8_t p129_page_free(uint8_t page);
+extern uint8_t p129_page_pin(uint8_t page);
+extern uint8_t p129_page_unpin(uint8_t page);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -127,7 +134,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.16-SPEAKER-TONE\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.17-MEMORY-PAGE-ALLOCATOR\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -264,6 +271,25 @@ void p129_c_entry(void)
     p129_speaker_test_tone();
     debug_puts("[SPEAKER] TONE END\r\n");
     debug_puts("[P129] SPEAKER SMOKE TEST COMPLETE\r\n");
+
+    debug_puts("[MEM] PHYSICAL PAGE MANAGER INIT BEGIN\r\n");
+    if (p129_memory_init() != 0u) {
+        debug_puts("[MEM] INIT FAILED\r\n");
+    } else {
+        debug_puts("[MEM] MODEL=1M PAGES=64 PAGE_SIZE=16K\r\n");
+        debug_puts("[MEM] RESERVED=P2:STACK P3:ATTR P5:RESIDENT P7:CHAR\r\n");
+        debug_puts("[MEM] TOP-DOWN ALLOCATOR/PIN SELFTEST BEGIN\r\n");
+        result = p129_memory_selftest();
+        if (result == 0u) {
+            debug_puts("[MEM] TOP-DOWN ALLOCATOR/PIN SELFTEST PASS; FREE=");
+            debug_hex8(p129_memory_free_count());
+            debug_puts("\r\n");
+        } else {
+            debug_puts("[MEM] TOP-DOWN ALLOCATOR/PIN SELFTEST FAILED; TEST=");
+            debug_hex8((uint8_t)result);
+            debug_puts("\r\n");
+        }
+    }
 
     rtc_poll_divider = 0;
     rtc_poll_phase = 0;
