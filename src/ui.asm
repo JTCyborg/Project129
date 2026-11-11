@@ -204,67 +204,37 @@ p129_ui_clear:
 
 ; HL=zero-terminated string, A=row, C=column.
 p129_ui_print_at:
-        push    af
-        push    bc
-        push    de
-        push    hl
-p129_ui_print_loop:
-        ld      a,(hl)
-        or      a
-        jr      z,p129_ui_print_done
-        inc     hl
         ld      (p129_ui_text_ptr),hl
-        pop     hl
-        pop     de
-        pop     bc
-        pop     af
-        push    af
-        push    bc
-        push    de
-        push    hl
         ld      (p129_ui_print_row),a
         ld      a,c
         ld      (p129_ui_print_col),a
-        ld      hl,(p129_ui_text_ptr)
-        ld      a,(hl)
-        inc     hl
-        ld      (p129_ui_text_ptr),hl
-        ld      d,0
-        ld      a,(p129_ui_print_row)
-        ld      d,a
-        ld      a,(p129_ui_print_col)
-        ld      e,a
-        ld      a,(hl-1)
-        call    p129_ui_write_char
-        ld      a,(p129_ui_print_col)
-        inc     a
-        ld      (p129_ui_print_col),a
-        ld      a,(p129_ui_print_row)
-        ld      d,a
-        ld      a,(p129_ui_print_col)
-        ld      e,a
-        ld      a,(p129_ui_text_ptr)
-        ; The row/column state is advanced in the stored frame below.
+p129_ui_print_loop:
         ld      hl,(p129_ui_text_ptr)
         ld      a,(hl)
         or      a
-        jr      z,p129_ui_print_done
-        ; Continue at next character, keeping current row/column.
-        pop     hl
-        pop     de
-        pop     bc
-        pop     af
-        push    af
-        push    bc
-        push    de
-        push    hl
+        ret     z
+        ld      (p129_ui_char),a
+        inc     hl
+        ld      (p129_ui_text_ptr),hl
+        ld      a,(p129_ui_print_row)
+        ld      d,a
+        ld      a,(p129_ui_print_col)
+        ld      e,a
+        ld      a,(p129_ui_char)
+        call    p129_ui_write_char
+        ld      a,(p129_ui_print_col)
+        inc     a
+        cp      P129_UI_WIDTH
+        jr      c,p129_ui_print_col_ok
+        xor     a
+        ld      (p129_ui_print_col),a
+        ld      a,(p129_ui_print_row)
+        inc     a
+        ld      (p129_ui_print_row),a
         jr      p129_ui_print_loop
-p129_ui_print_done:
-        pop     hl
-        pop     de
-        pop     bc
-        pop     af
-        ret
+p129_ui_print_col_ok:
+        ld      (p129_ui_print_col),a
+        jr      p129_ui_print_loop
 
 p129_ui_write_char:
         push    af
