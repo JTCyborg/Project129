@@ -70,20 +70,20 @@ void p129_c_entry(void)
      * while the legacy ROM/shadow/video mapping is still untouched.
      * Startup diagnostics remain available on #EF during this early phase.
      */
-    debug_puts("[TRDOS] DIRECTORY READ BEGIN\\r\\n");
+    debug_puts("[TRDOS] DIRECTORY READ BEGIN\r\n");
     result = p129_trdos_preload();
 
     /* Initialize the visible ATM console after the ROM disk operation. */
     p129_ui_init();
     p129_ui_ready = 1;
-    debug_puts("[P129] ATM RG6 80X25 UI READY\\r\\n");
+    debug_puts("[P129] ATM RG6 80X25 UI READY\r\n");
     if (result != 0) {
-        debug_puts("[TRDOS] DIRECTORY READ FAILED\\r\\n");
+        debug_puts("[TRDOS] DIRECTORY READ FAILED\r\n");
         debug_puts("[TRDOS] ROM ERROR #5D0F=");
         debug_hex8(*(volatile uint8_t *)0x5D0F);
         debug_puts(" STATUS #5D10=");
         debug_hex8(*(volatile uint8_t *)0x5D10);
-        debug_puts("\\r\\n[P129] SAFE IDLE\\r\\n");
+        debug_puts("\r\n[P129] SAFE IDLE\r\n");
         for (;;) {}
     }
 
