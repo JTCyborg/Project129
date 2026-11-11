@@ -1,0 +1,238 @@
+; ============================================================================
+; Project129 ATM keyboard driver
+; Ported from Project127 src/kernel/p127_keyboard.asm.
+;
+; ATM host owns physical ULA port FEh. NeoGS/x86 must never perform this I/O.
+; Preferred path: Unreal Speccy ATM_KBD mode 2 + event mode 3.
+; Fallback: standard ZX 8x5 matrix, diagnostic only.
+;
+; C API:
+;   p129_keyboard_init() -> p129_keyboard_xt_active (0/1)
+;   p129_keyboard_poll() -> A=1 when an event/state change is available
+;   p129_keyboard_lastscan, _r2, _r3, _r4, _r5
+;   p129_keyboard_matrix[8]
+; ============================================================================
+
+SECTION CODE
+PUBLIC _p129_keyboard_init
+PUBLIC _p129_keyboard_poll
+PUBLIC _p129_keyboard_xt_active
+PUBLIC _p129_keyboard_lastscan
+PUBLIC _p129_keyboard_r2
+PUBLIC _p129_keyboard_r3
+PUBLIC _p129_keyboard_r4
+PUBLIC _p129_keyboard_r5
+PUBLIC _p129_keyboard_matrix
+
+P129_KBD_PORT              EQU #FE
+P129_KBD_MODE_XT           EQU 2
+P129_KBD_MODE_EVENT        EQU 3
+P129_KBD_ROW_MASK          EQU #1F
+
+_p129_keyboard_init:
+        xor     a
+        ld      (_p129_keyboard_xt_active),a
+        ld      (_p129_keyboard_snapshot_valid),a
+        ld      (_p129_keyboard_lastscan),a
+        ld      (_p129_keyboard_r2),a
+        ld      (_p129_keyboard_r3),a
+        ld      (_p129_keyboard_r4),a
+        ld      (_p129_keyboard_r5),a
+        ld      hl,_p129_keyboard_matrix
+        ld      de,_p129_keyboard_previous
+        ld      b,8
+p129_kbd_init_clear:
+        ld      (hl),#1F
+        inc     hl
+        ld      (de),#1F
+        inc     de
+        djnz    p129_kbd_init_clear
+
+        ld      a,P129_KBD_MODE_XT
+        call    p129_kbd_set_mode
+        jr      c,p129_kbd_init_done
+        ld      a,1
+        ld      (_p129_keyboard_xt_active),a
+p129_kbd_init_done:
+        ld      a,(_p129_keyboard_xt_active)
+        ret
+
+; A=2 or A=3. Carry indicates handshake failure.
+p129_kbd_set_mode:
+        ld      (_p129_kbd_requested_mode),a
+        ld      bc,#55FE
+        in      a,(c)
+        cp      #AA
+        jr      nz,p129_kbd_mode_fail
+        ld      bc,#08FE
+        in      a,(c)
+        cp      8
+        jr      nz,p129_kbd_mode_fail
+        ld      a,(_p129_keyboard_requested_mode)
+        ld      b,a
+        ld      c,P129_KBD_PORT
+        in      a,(c)
+        cp      #FF
+        jr      nz,p129_kbd_mode_fail
+        or      a
+        ret
+p129_kbd_mode_fail:
+        scf
+        ret
+
+; Poll one ATM XT event or one ZX matrix snapshot.
+; A=1 on a new event/state transition, A=0 otherwise.
+_p129_keyboard_poll:
+        ld      a,(_p129_keyboard_xt_active)
+        or      a
+        jr      z,p129_kbd_poll_matrix
+        call    p129_kbd_read_mode2
+        ld      a,P129_KBD_MODE_EVENT
+        call    p129_kbd_set_mode
+        jr      c,p129_kbd_xt_recover
+        ld      bc,#00FE
+        in      a,(c)
+        ld      (_p129_keyboard_lastscan),a
+        ld      a,P129_KBD_MODE_XT
+        call    p129_kbd_set_mode
+        jr      c,p129_kbd_xt_recover
+
+        ld      a,(_p129_keyboard_lastscan)
+        or      a
+        jr      nz,p129_kbd_event
+        ld      a,(_p129_keyboard_r3)
+        ld      b,a
+        ld      a,(_p129_keyboard_prev_r3)
+        cp      b
+        jr      nz,p129_kbd_event
+        ld      a,(_p129_keyboard_r4)
+        ld      b,a
+        ld      a,(_p129_keyboard_prev_r4)
+        cp      b
+        jr      nz,p129_kbd_event
+        ld      a,(_p129_keyboard_r5)
+        ld      b,a
+        ld      a,(_p129_keyboard_prev_r5)
+        cp      b
+        jr      nz,p129_kbd_event
+        xor     a
+        ret
+
+p129_kbd_event:
+        ld      a,(_p129_keyboard_r3)
+        ld      (_p129_keyboard_prev_r3),a
+        ld      a,(_p129_keyboard_r4)
+        ld      (_p129_keyboard_prev_r4),a
+        ld      a,(_p129_keyboard_r5)
+        ld      (_p129_keyboard_prev_r5),a
+        ld      a,1
+        ret
+
+p129_kbd_xt_recover:
+        ld      a,P129_KBD_MODE_XT
+        call    p129_kbd_set_mode
+        xor     a
+        ret
+
+p129_kbd_read_mode2:
+        ld      bc,#00FE
+        in      a,(c)
+        ld      (_p129_keyboard_r2),a
+        ld      bc,#40FE
+        in      a,(c)
+        ld      (_p129_keyboard_r3),a
+        ld      bc,#80FE
+        in      a,(c)
+        ld      (_p129_keyboard_r4),a
+        ld      bc,#C0FE
+        in      a,(c)
+        ld      (_p129_keyboard_r5),a
+        ret
+
+; Standard ZX matrix fallback, used only if ATM_KBD mode negotiation fails.
+p129_kbd_poll_matrix:
+        call    p129_kbd_scan_matrix
+        ld      a,(_p129_keyboard_snapshot_valid)
+        or      a
+        jr      z,p129_kbd_matrix_changed
+        ld      hl,_p129_keyboard_matrix
+        ld      de,_p129_keyboard_previous
+        ld      b,8
+p129_kbd_matrix_compare:
+        ld      a,(de)
+        cp      (hl)
+        jr      nz,p129_kbd_matrix_changed
+        inc     de
+        inc     hl
+        djnz    p129_kbd_matrix_compare
+        xor     a
+        ret
+
+p129_kbd_matrix_changed:
+        ld      hl,_p129_keyboard_matrix
+        ld      de,_p129_keyboard_previous
+        ld      bc,8
+        ldir
+        ld      a,1
+        ld      (_p129_keyboard_snapshot_valid),a
+        ld      a,1
+        ret
+
+p129_kbd_scan_matrix:
+        push    bc
+        push    de
+        push    hl
+        ld      bc,#00FE
+        ld      hl,p129_kbd_row_selectors
+        ld      de,_p129_keyboard_matrix
+        ld      a,8
+p129_kbd_scan_loop:
+        push    af
+        ld      b,(hl)
+        inc     hl
+        in      a,(c)
+        and     P129_KBD_ROW_MASK
+        ld      (de),a
+        inc     de
+        pop     af
+        dec     a
+        jr      nz,p129_kbd_scan_loop
+        pop     hl
+        pop     de
+        pop     bc
+        ret
+
+SECTION DATA
+p129_kbd_row_selectors:
+        db #FE,#FD,#FB,#F7,#EF,#DF,#BF,#7F
+
+_p129_keyboard_xt_active:
+        db 0
+_p129_keyboard_requested_mode:
+        db 0
+_p129_keyboard_lastscan:
+        db 0
+_p129_keyboard_r2:
+        db 0
+_p129_keyboard_r3:
+        db 0
+_p129_keyboard_r4:
+        db 0
+_p129_keyboard_r5:
+        db 0
+p129_keyboard_prev_r3:
+_p129_keyboard_prev_r3:
+        db #FF
+p129_keyboard_prev_r4:
+_p129_keyboard_prev_r4:
+        db #FF
+p129_keyboard_prev_r5:
+_p129_keyboard_prev_r5:
+        db #FF
+_p129_keyboard_snapshot_valid:
+        db 0
+_p129_keyboard_matrix:
+        ds 8,#1F
+p129_keyboard_previous:
+_p129_keyboard_previous:
+        ds 8,#1F
