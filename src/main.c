@@ -33,6 +33,7 @@ extern uint8_t p129_map_w3_lease_selftest(void);
 extern uint8_t p129_map_w3_bank_selftest(void);
 extern uint8_t p129_map_w3_hw_selftest(void);
 extern uint8_t p129_map_page_copy_selftest(void);
+extern uint8_t p129_bank_module_selftest(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -137,7 +138,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.23-PHYSICAL-PAGE-COPY\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.24-MULTIPAGE-MODULE-IO\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -317,6 +318,9 @@ void p129_c_entry(void)
                             debug_puts("[BANK] NESTED W3 ENTER/LEAVE / PAGE PIN / RESTORE PASS\r\n");
                             result = p129_map_page_copy_selftest();
                             if (result == 0u) debug_puts("[MEM] PHYSICAL PAGE COPY / OVERLAP PASS\r\n");
+                            result = p129_bank_module_selftest();
+                            if (result == 0u) debug_puts("[BANK] MULTIPAGE MODULE IO / 64K BOUNDARY PASS\\r\\n");
+                            else { debug_puts("[BANK] MULTIPAGE MODULE IO FAILED; TEST="); debug_hex8(result); debug_puts("\\r\\n"); }
                             else { debug_puts("[MEM] PHYSICAL PAGE COPY FAILED; TEST="); debug_hex8(result); debug_puts("\r\n"); }
                         } else {
                             debug_puts("[BANK] NESTED W3 SELFTEST FAILED; TEST=");
