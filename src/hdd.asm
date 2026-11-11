@@ -20,6 +20,9 @@ PUBLIC _p129_hdd_sector_valid
 PUBLIC _p129_hdd_error
 PUBLIC _p129_hdd_last_status
 PUBLIC _p129_hdd_capacity
+PUBLIC _p129_hdd_read_sector_lba28
+PUBLIC _p129_hdd_lba
+PUBLIC _p129_hdd_sector
 
 P129_HDD_PORT_DATA_LO  EQU 00010h
 P129_HDD_PORT_DATA_HI  EQU 00011h
@@ -117,13 +120,17 @@ p129_hdd_identify_loop:
         ld      (_p129_hdd_present),a
 
         ; Read the first legacy partition boot sector (absolute LBA 63).
-        call    p129_hdd_read_lba63
+        ld      hl,63
+        ld      (_p129_hdd_lba),hl
+        ld      hl,0
+        ld      (_p129_hdd_lba+2),hl
+        call    _p129_hdd_read_sector_lba28
         jr      nc,p129_hdd_sector_read_ok
         ld      a,7
         ld      (_p129_hdd_error),a
         jr      p129_hdd_probe_done
 p129_hdd_sector_read_ok:
-        ld      a,(p129_hdd_sector+11)
+        ld      a,(_p129_hdd_sector+11)
         or      a
         jr      nz,p129_hdd_bad_bpb
         ld      a,(p129_hdd_sector+12)
@@ -173,31 +180,41 @@ p129_hdd_probe_done:
         pop     af
         ret
 
-; Read one 512-byte sector at LBA 63 using ATA READ SECTORS (20h).
-p129_hdd_read_lba63:
+; Read one 512-byte sector at the 28-bit LBA in _p129_hdd_lba.
+_p129_hdd_read_sector_lba28:
+        push    af
+        push    bc
+        push    de
+        push    hl
+        push    ix
+        ld      a,(_p129_hdd_lba+3)
+        and     0F0h
+        jr      nz,p129_hdd_read_lba_bad
         call    p129_hdd_wait_ready
-        ret     c
+        jr      c,p129_hdd_read_lba_error
         ld      a,1
         ld      bc,P129_HDD_PORT_COUNT
         out     (c),a
-        ld      a,P129_HDD_PARTITION_LBA
+        ld      a,(_p129_hdd_lba)
         ld      bc,P129_HDD_PORT_LBA_LOW
         out     (c),a
-        xor     a
+        ld      a,(_p129_hdd_lba+1)
         ld      bc,P129_HDD_PORT_LBA_MID
         out     (c),a
+        ld      a,(_p129_hdd_lba+2)
         ld      bc,P129_HDD_PORT_LBA_HIGH
         out     (c),a
-        ld      a,0E0h
+        ld      a,(_p129_hdd_lba+3)
+        and     00Fh
+        or      0E0h
         ld      bc,P129_HDD_PORT_DRIVE
         out     (c),a
         ld      a,020h
         ld      bc,P129_HDD_PORT_COMMAND
         out     (c),a
         call    p129_hdd_wait_drq
-        ret     c
-
-        ld      ix,p129_hdd_sector
+        jr      c,p129_hdd_read_lba_error
+        ld      ix,_p129_hdd_sector
         ld      de,256
 p129_hdd_sector_loop:
         ld      bc,P129_HDD_PORT_DATA_LO
@@ -212,7 +229,27 @@ p129_hdd_sector_loop:
         ld      a,d
         or      e
         jr      nz,p129_hdd_sector_loop
-        jp      p129_hdd_wait_complete
+        call    p129_hdd_wait_complete
+        jr      c,p129_hdd_read_lba_error
+        xor     a
+        jr      p129_hdd_read_lba_done
+p129_hdd_read_lba_bad:
+        ld      a,2
+        jr      p129_hdd_read_lba_done
+p129_hdd_read_lba_error:
+        ld      a,3
+p129_hdd_read_lba_done:
+        ld      (_p129_hdd_error),a
+        pop     ix
+        pop     hl
+        pop     de
+        pop     bc
+        pop     af
+        ld      a,(_p129_hdd_error)
+        or      a
+        ret     z
+        scf
+        ret
 
 ; Bounded wait for DRDY=1, BSY=0, ERR=0.
 p129_hdd_wait_ready:
@@ -315,5 +352,6 @@ _p129_hdd_sector_valid: db 0
 _p129_hdd_error:       db 0
 _p129_hdd_last_status: db 0
 _p129_hdd_capacity:    db 0,0,0,0
+_p129_hdd_lba:         db 0,0,0,0
 p129_hdd_identify:     ds 512,0
-p129_hdd_sector:       ds 512,0
+_p129_hdd_sector:      ds 512,0
