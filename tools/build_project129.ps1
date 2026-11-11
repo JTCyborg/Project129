@@ -43,7 +43,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
 Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.24-MULTIPAGE-MODULE-IO"
-foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
+foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
@@ -52,7 +52,7 @@ Write-Host "[P129 BUILD] ZCC=$Zcc"
 # at address zero unless the Z80ASM linker is explicitly relocated. Since TR-DOS
 # loads P129BOOT.C at #6000, relocate the complete linked image to #6000 so every
 # CALL/JR/data reference emitted by SDCC addresses the resident image correctly.
-& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/memory.c src/map.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/memory.c src/map.c src/bank.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) {
     $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
@@ -123,11 +123,11 @@ $MapRestoreMatch = [regex]::Match($MapText, '(?m)^_p129_map_restore_boot\s*=\s*\
 $BankEnterMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_enter\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankLeaveMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_leave\s*=\s*\$([0-9A-Fa-f]{4})')
 $PageCopyMatch = [regex]::Match($MapText, '(?m)^_p129_map_page_copy\s*=\s*\$([0-9A-Fa-f]{4})')
-$PageCopySelftestMatch = [regex]::Match($MapText,
+$PageCopySelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_page_copy_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankModuleAllocMatch = [regex]::Match($MapText, '(?m)^_p129_bank_module_alloc\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankModuleReadMatch = [regex]::Match($MapText, '(?m)^_p129_bank_module_read\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankModuleWriteMatch = [regex]::Match($MapText, '(?m)^_p129_bank_module_write\s*=\s*\$([0-9A-Fa-f]{4})')
-$BankModuleSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_bank_module_selftest\s*=\s*\$([0-9A-Fa-f]{4})') '(?m)^_p129_map_page_copy_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
+$BankModuleSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_bank_module_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $BankSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_bank_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapHwWriteMatch = [regex]::Match($MapText, '(?m)^_p129_map_hw_write\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapHwSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_w3_hw_selftest\s*=\s*\$([0-9A-Fa-f]{4})')

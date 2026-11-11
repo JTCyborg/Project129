@@ -1,6 +1,7 @@
 #include "bank.h"
 #include "memory.h"
 #include "map.h"
+void p129_bank_module_init(p129_bank_module_t *m) { if(m){m->magic=0u;m->size=0u;m->page_count=0u;} }
 uint8_t p129_bank_module_alloc(p129_bank_module_t *m, uint32_t size) {
  uint32_t count,i;
  if(!m||!size||size>(uint32_t)P129_BANK_MAX_PAGES*P129_BANK_PAGE_SIZE)return 1u;
@@ -28,7 +29,7 @@ static uint8_t p129_bank_module_transfer(p129_bank_module_t *m,uint32_t offset,u
 uint8_t p129_bank_module_write(p129_bank_module_t *m,uint32_t o,const uint8_t *s,uint16_t n){return p129_bank_module_transfer(m,o,(uint8_t *)s,n,1u);}
 uint8_t p129_bank_module_read(p129_bank_module_t *m,uint32_t o,uint8_t *d,uint16_t n){return p129_bank_module_transfer(m,o,d,n,0u);}
 uint8_t p129_bank_module_selftest(void) {
- p129_bank_module_t m;uint8_t s[64],d[64],i,e=0u;m.magic=0u;m.size=0u;m.page_count=0u;
+ p129_bank_module_t m;uint8_t s[64],d[64],i,e=0u;p129_bank_module_init(&m);
  if(p129_map_w3_bank_depth())return 1u;if(p129_bank_module_alloc(&m,65536UL+64UL))return 2u;
  if(m.page_count!=5u){e=3u;goto done;}for(i=0u;i<64u;++i){s[i]=(uint8_t)(i*13u+0x37u);d[i]=0u;}
  if(p129_bank_module_write(&m,65520UL,s,64u)){e=4u;goto done;}if(p129_bank_module_read(&m,65520UL,d,64u)){e=5u;goto done;}
