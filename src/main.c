@@ -22,6 +22,7 @@ extern uint8_t p129_range_selftest(void);
 extern uint8_t p129_keyboard_init(void);
 extern uint8_t p129_keyboard_poll(void);
 extern void p129_keyboard_delay_window(void);
+extern void p129_speaker_test_tone(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -126,7 +127,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.15-KEYBOARD-TIMEOUT\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.16-SPEAKER-TONE\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -257,7 +258,12 @@ void p129_c_entry(void)
         if (keyboard_idle_windows == 0) break;
     }
     debug_puts("[KBD] DONE\r\n");
-    debug_puts("[P129] KEYBOARD COMPLETE; NEXT=SPEAKER\r\n");
+    debug_puts("[P129] KEYBOARD COMPLETE\r\n");
+
+    debug_puts("[SPEAKER] ATM #FE D4 TONE BEGIN; BORDER/TAPE STATE=0\r\n");
+    p129_speaker_test_tone();
+    debug_puts("[SPEAKER] TONE END\r\n");
+    debug_puts("[P129] SPEAKER SMOKE TEST COMPLETE\r\n");
 
     rtc_poll_divider = 0;
     rtc_poll_phase = 0;
