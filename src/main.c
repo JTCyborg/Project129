@@ -8,6 +8,14 @@ static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
 extern volatile uint8_t p129_trdos_result;
 extern void p129_ui_init(void);
 extern void p129_ui_putc(uint8_t value);
+extern void p129_ui_clock_update(void);
+extern void p129_rtc_probe(void);
+extern void p129_rtc_read_current(void);
+extern volatile uint8_t p129_rtc_available;
+extern volatile uint8_t p129_rtc_backend;
+extern volatile char p129_rtc_hour[2];
+extern volatile char p129_rtc_minute[2];
+extern volatile char p129_rtc_second[2];
 
 static void debug_putc(uint8_t value)
 {
@@ -91,11 +99,15 @@ void p129_c_entry(void)
 {
     uint16_t result;
     uint8_t files;
+    volatile uint16_t rtc_poll_divider;
+    uint8_t rtc_poll_phase;
+    char last_second_tens;
+    char last_second_ones;
 
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.7-UI-CATALOGUE\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.8-DS12887-RTC\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -123,7 +135,53 @@ void p129_c_entry(void)
     debug_puts("\r\n");
     debug_puts("[P129] TR-DOS CATALOGUE PRELOADED\r\n");
     trdos_print_catalogue();
+
+    debug_puts("[RTC] DS12887 PROBE BEGIN (GLUK/SMUC)\r\n");
+    p129_rtc_probe();
+    if (p129_rtc_available) {
+        p129_rtc_read_current();
+        p129_ui_clock_update();
+        if (p129_rtc_hour[0] == '?') {
+            debug_puts("[RTC] DS12887 ONLINE; TIME READ FAILED\r\n");
+        } else {
+            debug_puts("[RTC] DS12887 ONLINE; BACKEND=");
+            debug_puts(p129_rtc_backend ? "SMUC" : "GLUK");
+            debug_puts("; TIME=");
+            debug_putc((uint8_t)p129_rtc_hour[0]);
+            debug_putc((uint8_t)p129_rtc_hour[1]);
+            debug_putc(':');
+            debug_putc((uint8_t)p129_rtc_minute[0]);
+            debug_putc((uint8_t)p129_rtc_minute[1]);
+            debug_putc(':');
+            debug_putc((uint8_t)p129_rtc_second[0]);
+            debug_putc((uint8_t)p129_rtc_second[1]);
+            debug_puts("\r\n");
+        }
+    } else {
+        p129_ui_clock_update();
+        debug_puts("[RTC] DS12887 NOT DETECTED / INVALID STATUS\r\n");
+    }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
-    for (;;) {}
+    rtc_poll_divider = 0;
+    rtc_poll_phase = 0;
+    last_second_tens = p129_rtc_second[0];
+    last_second_ones = p129_rtc_second[1];
+    for (;;) {
+        if (!p129_rtc_available) continue;
+        ++rtc_poll_divider;
+        if (rtc_poll_divider == 0) {
+            ++rtc_poll_phase;
+            if (rtc_poll_phase >= 10) {
+                rtc_poll_phase = 0;
+                p129_rtc_read_current();
+                if (p129_rtc_second[0] != last_second_tens ||
+                    p129_rtc_second[1] != last_second_ones) {
+                    last_second_tens = p129_rtc_second[0];
+                    last_second_ones = p129_rtc_second[1];
+                    p129_ui_clock_update();
+                }
+            }
+        }
+    }
 }

@@ -32,8 +32,10 @@ The UI uses the Project127/Project126 ATM text layout: character plane on page 7
 ## Current implementation status (2026-11-11)
 
 - Bootstrap 0.1.0: BASIC/TR-DOS load, resident entry and Z88DK C handoff are runtime-confirmed by the user.
-- Bootstrap 0.3.0: ATM RG6 80x25 console module is implemented in `src/ui.asm`; C initializes it before invoking TR-DOS or any other service. Runtime confirmation is pending.
-- Read-only TR-DOS catalogue preload remains implemented in `src/trdos.asm`; it now follows UI startup and C validates the 128-entry, 2048-byte snapshot at `#C800`.
+- Bootstrap 0.3.7: ATM RG6 80x25 console and TR-DOS catalogue preload are runtime-confirmed. The user verified all eight sector reads, the 2048-byte directory snapshot, two catalogue entries (`boot.B`, `p129boot.C`), and visible UI/log output.
+- Bootstrap 0.3.8: a read-only DS12887 driver is implemented in `src/rtc.asm`. It probes native GLUK (`#EFF7/#DFF7/#BFF7`) first, falls back to SMUC (`#FFBA/#DFBA`), validates Status D/A, waits for UIP to clear, takes a stable seconds/minutes/hours/seconds snapshot, and converts BCD/binary plus 12/24-hour formats. It restores the DOSEN/RG6 state through the Project126 `#3D2F` / `#0177` trampoline after native GLUK access.
+- The ATM status panel now has a dedicated `REAL TIME CLOCK` field; `src/main.c` probes and reads the RTC after UI and TR-DOS catalogue startup, then publishes `HH:MM:SS` or `??:??:??`.
+- Bootstrap 0.3.8 RTC hardware detection, time read, and display are implemented but still require runtime confirmation from the user. Do not report DS12887 online until the emulator log confirms it.
 - The catalogue preload uses the same TR-DOS ROM contract as Project127: entry `#3D13`, track 0 sectors 1..8, destination `#C800..#CFFF`, scratch stack `#B7F0`, and error/status bytes `#5D0F/#5D10`.
 - Runtime confirmation of Bootstrap 0.3.0 UI startup is pending. Full W3 lease integration remains to be completed; do not report the UI ownership stage as complete.
 
