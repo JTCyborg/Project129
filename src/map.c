@@ -24,6 +24,7 @@ extern uint8_t p129_ui_quiesce(void);
 extern uint8_t p129_ui_handoff_begin(void);
 extern uint8_t p129_ui_handoff_end(void);
 extern uint8_t p129_ui_resume(void);
+static uint8_t p129_map_hw_apply(uint8_t page);
 
 uint8_t p129_map_init(void)
 {
@@ -151,7 +152,7 @@ uint8_t p129_map_restore_boot(void)
     return 0u;
 }
 
-/* W3 ownership orchestration over the software shadow map only. */
+/* W3 ownership orchestration: quiesce UI, then physically map the leased page. */
 uint8_t p129_map_w3_lease_begin(uint8_t page)
 {
     uint8_t status;

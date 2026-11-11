@@ -297,7 +297,7 @@ void p129_c_entry(void)
             debug_hex8((uint8_t)result);
             debug_puts("\r\n");
         }
-        debug_puts("[MAP] SOFTWARE PAGE MAP INIT BEGIN\r\n");
+        debug_puts("[MAP] ATM2+ PHYSICAL W3 PAGE MAP INIT BEGIN\r\n");
         if (p129_map_init() != 0u) {
             debug_puts("[MAP] INIT FAILED\r\n");
         } else {
@@ -312,15 +312,15 @@ void p129_c_entry(void)
                     if (result == 0u) {
                         debug_puts("[MAP] PHYSICAL W3 PAGE SWITCH / ISOLATION PASS\r\n");
                         result = p129_map_w3_bank_selftest();
+                        if (result == 0u) {
+                            debug_puts("[BANK] NESTED W3 ENTER/LEAVE / PAGE PIN / RESTORE PASS\r\n");
+                        } else {
+                            debug_puts("[BANK] NESTED W3 SELFTEST FAILED; TEST=");
+                            debug_hex8((uint8_t)result);
+                            debug_puts("\r\n");
+                        }
                     } else {
                         debug_puts("[MAP] PHYSICAL W3 PAGE SWITCH / ISOLATION FAILED; TEST=");
-                        debug_hex8((uint8_t)result);
-                        debug_puts("\r\n");
-                    }
-                    if (result == 0u) {
-                        debug_puts("[BANK] NESTED W3 ENTER/LEAVE / PAGE PIN / RESTORE PASS\r\n");
-                    } else {
-                        debug_puts("[BANK] NESTED W3 SELFTEST FAILED; TEST=");
                         debug_hex8((uint8_t)result);
                         debug_puts("\r\n");
                     }
