@@ -43,11 +43,19 @@ _p129_trdos_preload:
         jp      03D2Fh
 
 p129_trdos_rom_ready:
-        ; Restore the complete Project127 TR-DOS access mapping, not just
-        ; DOSEN: W0=#BF selects the DOSEN-controlled low ROM (TR-DOS), and
-        ; W3=#7F selects RAM page 0 for the directory buffer at #C800.
+        ; Re-establish the complete fixed resident map after #3D2F.
+        ; W0=#BF selects the DOSEN-controlled TR-DOS ROM; W1=P5 contains
+        ; this executing resident image; W2=P2 contains the live/scratch
+        ; stacks; W3=P0 contains the #C800 directory staging buffer.
+        ; Explicitly restore W1/W2 as #3D2F and UI setup may alter shadow state.
         ld      a,0BFh
         ld      bc,03FF7h
+        out     (c),a
+        ld      a,07Ah
+        ld      bc,07FF7h
+        out     (c),a
+        ld      a,07Dh
+        ld      bc,0BFF7h
         out     (c),a
         ld      a,07Fh
         ld      bc,0FFF7h
