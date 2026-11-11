@@ -42,7 +42,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.12-KEYBOARD"
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.13-KEYBOARD-Z80ASM"
 foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
