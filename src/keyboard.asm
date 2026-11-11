@@ -16,6 +16,7 @@
 SECTION CODE
 PUBLIC _p129_keyboard_init
 PUBLIC _p129_keyboard_poll
+PUBLIC _p129_keyboard_delay_window
 PUBLIC _p129_keyboard_xt_active
 PUBLIC _p129_keyboard_lastscan
 PUBLIC _p129_keyboard_r2
@@ -81,6 +82,17 @@ p129_kbd_set_mode:
         ret
 p129_kbd_mode_fail:
         scf
+        ret
+
+; Project127-compatible delay window (~0.24 s at 7 MHz).
+; Twenty windows target approximately five seconds of inactivity.
+_p129_keyboard_delay_window:
+        ld      de,0FFFFh
+p129_kbd_delay_loop:
+        dec     de
+        ld      a,d
+        or      e
+        jr      nz,p129_kbd_delay_loop
         ret
 
 ; Poll one ATM XT event or one ZX matrix snapshot.

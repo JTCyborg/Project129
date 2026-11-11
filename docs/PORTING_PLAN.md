@@ -36,6 +36,8 @@ The UI uses the Project127/Project126 ATM text layout: character plane on page 7
 
 ## Current implementation status (2026-11-11)
 
+- Bootstrap 0.3.15: the user's 0.3.14 runtime log confirms ZX fallback make/break transitions (matrix row 3 changes `1F` -> `1E`/`1D` -> `1F`). ATM XT negotiation remains unverified and fell back to ZX. The monitor now uses the Project127 software delay loop and resets a 20-window inactivity countdown on each observed transition. Project127 describes 41 windows as approximately 10 seconds at 7 MHz; 20 windows target approximately 5 seconds. Expiry emits `[KBD] DONE` and `[P129] KEYBOARD COMPLETE; NEXT=SPEAKER`, then enters the existing resident RTC service loop. Exact elapsed wall time and completion marker await runtime confirmation.
+
 - Bootstrap 0.1.0: BASIC/TR-DOS load, resident entry and Z88DK C handoff are runtime-confirmed by the user.
 - Bootstrap 0.3.7: ATM RG6 80x25 console and TR-DOS catalogue preload are runtime-confirmed. The user verified all eight sector reads, the 2048-byte directory snapshot, two catalogue entries (`boot.B`, `p129boot.C`), and visible UI/log output.
 - Bootstrap 0.3.8: a read-only DS12887 driver is implemented in `src/rtc.asm`. It probes native GLUK (`#EFF7/#DFF7/#BFF7`) first, falls back to SMUC (`#FFBA/#DFBA`), validates Status D/A, waits for UIP to clear, takes a stable seconds/minutes/hours/seconds snapshot, and converts BCD/binary plus 12/24-hour formats. It restores the DOSEN/RG6 state through the Project126 `#3D2F` / `#0177` trampoline after native GLUK access.
