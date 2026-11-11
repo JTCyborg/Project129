@@ -10,11 +10,20 @@ P129_HDD_FAT16_VERSION_MAJOR EQU 0
 P129_HDD_FAT16_VERSION_MINOR EQU 1
 P129_HDD_FAT16_VERSION_PATCH EQU 0
 
+SECTION CODE
+EXTERN _p129_hdd_read_sector_lba28
+EXTERN _p129_hdd_lba
+EXTERN _p129_hdd_sector
+EXTERN _p129_hdd_error
+EXTERN _p129_ui_putc
+PUBLIC _p129_hdd_list_root
+PUBLIC _p129_hdd_fat_file_count
+
 ; Parse the FAT16 BPB at LBA 63, calculate the absolute root-directory LBA,
 ; read every root-directory sector and print each valid 8.3 entry.
 ; IN: _p129_hdd_sector contains the partition boot sector from probe.
 ; OUT: carry=1 on invalid BPB or sector-read failure.
-p127_hdd_list_root:
+_p129_hdd_list_root:
         push    af
         push    bc
         push    de
@@ -24,8 +33,8 @@ p127_hdd_list_root:
 
         xor     a
         ld      (p129_hdd_fat_error),a
-        ld      (p129_hdd_fat_file_count),a
-        ld      (p129_hdd_fat_file_count+1),a
+        ld      (_p129_hdd_fat_file_count),a
+        ld      (_p129_hdd_fat_file_count+1),a
         ld      hl,p129_hdd_fat_msg_begin
         call    p129_hdd_puts
 
@@ -157,9 +166,9 @@ p129_hdd_fat_entry_loop:
         ld      (p129_hdd_fat_entry_attr),a
         call    p129_hdd_fat_emit_entry
 
-        ld      hl,(p129_hdd_fat_file_count)
+        ld      hl,(_p129_hdd_fat_file_count)
         inc     hl
-        ld      (p129_hdd_fat_file_count),hl
+        ld      (_p129_hdd_fat_file_count),hl
 
 p129_hdd_fat_skip_entry:
         ; Consume one BPB root entry and advance by its 32-byte record size.
@@ -212,9 +221,9 @@ p129_hdd_fat_complete:
         call    p129_hdd_puts
         ld      hl,p129_hdd_fat_msg_count
         call    p129_hdd_puts
-        ld      a,(p129_hdd_fat_file_count+1)
+        ld      a,(_p129_hdd_fat_file_count+1)
         call    p129_hdd_put_hex8
-        ld      a,(p129_hdd_fat_file_count)
+        ld      a,(_p129_hdd_fat_file_count)
         call    p129_hdd_put_hex8
         ld      a,13
         call    p129_hdd_put_char
@@ -416,7 +425,7 @@ p129_hdd_fat_ext_len:      db 0
 p129_hdd_fat_root_lba:     db 0,0,0,0
 p129_hdd_fat_sectors_left: dw 0
 p129_hdd_fat_entries_left: dw 0
-_p129_hdd_fat_file_count:  dw 0
+__p129_hdd_fat_file_count:  dw 0
 p129_hdd_fat_entry_ptr:    dw 0
 p129_hdd_fat_name:         ds 13,0
 p129_hdd_fat_ext:          ds 3,0
