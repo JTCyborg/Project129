@@ -117,3 +117,8 @@ A large static array alone is not proof of banked execution. The runtime log mus
 ## Validation policy
 
 For every milestone record: source/build identifiers, exact build command/tool versions, image size and contents, runtime log, and pass/fail status. Never report a compile or emulator test as passed unless it was actually run. Avoid isolated tests that do not advance an acceptance criterion.
+
+
+### 0.3.14 keyboard assembler correction
+
+The 0.3.13 assembler reached keyboard control-flow validation and reported an out-of-range relative branch (`jr z,p129_kbd_poll_matrix`, displacement +129). Replaced that branch with absolute conditional `jp`. This is a control-flow encoding correction only; keyboard compile/runtime remains pending user build and emulator validation.
