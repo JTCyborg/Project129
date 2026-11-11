@@ -219,3 +219,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Exposes resident debug formatting helpers and emits the raw BPB geometry through port #EF before returning FAT16 error 02, and after calculating the data-region start and cluster count.
 - The diagnostic includes bytes/sector, sectors/cluster, reserved sectors, FAT count, root entries, 16/32-bit total-sector fields, FAT size, DATA_START and computed cluster count. This distinguishes malformed BPB fields from a volume that is genuinely outside FAT16 cluster-count limits.
 - No FAT16 acceptance rule has been relaxed and no file-loading behavior has been changed. Build and runtime confirmation are pending.
+
+
+### Bootstrap 0.3.27 — FAT12/FAT16 root-file loader
+
+- Extends the banked root-file loader to classify FAT12 (<4085 clusters) and FAT16 (4085..65524 clusters) from the BPB-derived data-cluster count.
+- Implements packed FAT12 12-bit next-cluster extraction, including entries crossing a 512-byte FAT-sector boundary, while retaining FAT16 16-bit traversal.
+- Validates FAT capacity using the corresponding packed-entry size. Existing LBA28, volume bounds, file-size, module allocation and cluster-chain checks remain enabled.
+- FAT32, subdirectories, LFN, writes and executable loading remain out of scope. Build/runtime confirmation pending.

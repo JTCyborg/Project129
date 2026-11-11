@@ -8,6 +8,7 @@ extern void p129_debug_hex32(uint32_t value);
 #define P129_FAT16_SECTOR_SIZE 512u
 #define P129_FAT16_MAX_FILE (P129_BANK_MAX_PAGES * P129_BANK_PAGE_SIZE)
 #define P129_FAT16_EOC 0xFFF8u
+#define P129_FAT12_EOC 0x0FF8u
 extern uint8_t p129_hdd_read_sector_c(void);
 extern volatile uint8_t p129_hdd_lba[4];
 extern volatile uint8_t p129_hdd_sector[512];
@@ -24,7 +25,7 @@ static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,
                             uint8_t fats, uint16_t roots, uint16_t total16,
                             uint32_t total32, uint16_t fatsz,
                             uint32_t data_start, uint32_t clusters) {
-    p129_debug_puts("[FAT16] BPB BPS="); p129_debug_hex16(bps);
+    p129_debug_puts("[FAT] BPB BPS="); p129_debug_hex16(bps);
     p129_debug_puts(" SPC="); p129_debug_hex8(spc);
     p129_debug_puts(" RESERVED="); p129_debug_hex16(reserved);
     p129_debug_puts(" FATS="); p129_debug_hex8(fats);
@@ -32,7 +33,7 @@ static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,
     p129_debug_puts(" TOTAL16="); p129_debug_hex16(total16);
     p129_debug_puts(" TOTAL32="); p129_debug_hex32(total32);
     p129_debug_puts(" FAT_SIZE="); p129_debug_hex16(fatsz);
-    p129_debug_puts("\r\n[FAT16] DATA_START="); p129_debug_hex32(data_start);
+    p129_debug_puts("\r\n[FAT] DATA_START="); p129_debug_hex32(data_start);
     p129_debug_puts(" CLUSTERS="); p129_debug_hex32(clusters);
     p129_debug_puts("\r\n");
 }
@@ -52,7 +53,7 @@ static uint8_t p129_fat16_read(uint32_t lba) {
 uint8_t p129_fat16_load_root_file(const char *name83,
                                  p129_bank_module_t *module,
                                  uint32_t *size_out) {
-    uint8_t spc, fats, i, found=0u;
+    uint8_t spc, fats, i, found=0u, fat12;
     uint16_t reserved, root_entries, fat_size, root_sectors;
     uint16_t start_cluster=0u, cluster;
     uint32_t file_size=0UL, total_sectors, total32, fat_start, root_start;
@@ -87,8 +88,13 @@ uint8_t p129_fat16_load_root_file(const char *name83,
        ((uint32_t)p129_hdd_capacity[3]<<24))) return 3u;
     cluster_count=(volume_end-data_start)/spc;
     p129_fat16_diag(bps,spc,reserved,fats,root_entries,total16,total32,fat_size,data_start,cluster_count);
-    if(cluster_count<4085UL || cluster_count>=65525UL) return 2u;
-    if((cluster_count+2UL)*2UL>(uint32_t)fat_size*512UL) return 3u;
+    if(cluster_count<4085UL) fat12=1u;
+    else if(cluster_count<65525UL) fat12=0u;
+    else return 2u;
+    /* FAT12 packs two 12-bit entries into three bytes. */
+    if((fat12 ? (((cluster_count+2UL)*3UL+1UL)/2UL) :
+                  ((cluster_count+2UL)*2UL)) > (uint32_t)fat_size*512UL)
+        return 3u;
     cluster_bytes=(uint32_t)spc*512UL;
 
     /* Fixed root directory: sixteen 32-byte records per sector. */
@@ -133,13 +139,30 @@ uint8_t p129_fat16_load_root_file(const char *name83,
             file_offset+=amount;
         }
         if(step+1UL<clusters_needed) {
-            uint32_t fat_byte=(uint32_t)cluster*2UL;
+            uint32_t fat_byte=fat12 ? ((uint32_t)cluster+(uint32_t)cluster/2UL) :
+                                      (uint32_t)cluster*2UL;
             uint32_t fat_lba=fat_start+(fat_byte>>9);
             uint16_t fat_off=(uint16_t)(fat_byte&511UL),next;
+            uint8_t low;
             if((fat_byte>>9)>=fat_size) goto bad_chain;
             if(p129_fat16_read(fat_lba)) goto io_error;
-            next=p129_fat16_u16(sector+fat_off);
-            if(next>=P129_FAT16_EOC || next<2u || next==0xFFF7u) goto bad_chain;
+            low=sector[fat_off];
+            if(fat12 && fat_off==511u) {
+                /* A FAT12 12-bit entry can straddle two sectors. */
+                if((fat_byte>>9)+1UL>=fat_size) goto bad_chain;
+                if(p129_fat16_read(fat_lba+1UL)) goto io_error;
+                next=(uint16_t)low | ((uint16_t)sector[0]<<8);
+            } else {
+                next=(uint16_t)low | ((uint16_t)sector[fat_off+1u]<<8);
+            }
+            if(fat12) {
+                if(cluster&1u) next=(uint16_t)(next>>4);
+                else next&=0x0FFFu;
+                if(next>=P129_FAT12_EOC || next==0x0FF7u) goto bad_chain;
+            } else {
+                if(next>=P129_FAT16_EOC || next==0xFFF7u) goto bad_chain;
+            }
+            if(next<2u) goto bad_chain;
             cluster=next;
         }
     }
