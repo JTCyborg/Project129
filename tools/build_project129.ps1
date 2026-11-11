@@ -62,9 +62,11 @@ if (-not (Test-Path $Resident)) {
     throw "Z88DK returned success but produced no P129BOOT output. Review the verbose ZCC commands above."
 }
 $ResidentSize = (Get-Item $Resident).Length
-if ($ResidentSize -le 0 -or $ResidentSize -gt 16384) {
-    throw "Bootstrap resident image has invalid size: $ResidentSize bytes"
+if ($ResidentSize -le 0 -or $ResidentSize -gt 20480) {
+    throw "Bootstrap resident image exceeds the fixed #6000-#AFFF resident span (20 KiB): $ResidentSize bytes"
 }
+$ResidentEnd = 0x6000 + $ResidentSize
+if ($ResidentEnd -gt 0xB000) { throw "Resident image overlaps the BASIC loader at #B000" }
 $MapFile = [System.IO.Path]::ChangeExtension($Resident, ".map")
 if (-not (Test-Path $MapFile)) { throw "Z88DK did not produce the required link map: $MapFile" }
 $MapText = Get-Content -Raw $MapFile
