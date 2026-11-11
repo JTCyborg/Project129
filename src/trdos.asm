@@ -6,7 +6,7 @@
 
 SECTION CODE
 PUBLIC _p129_trdos_preload
-PUBLIC __p129_trdos_result
+PUBLIC _p129_trdos_result
 
 _p129_trdos_preload:
         push    af
