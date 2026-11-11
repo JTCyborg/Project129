@@ -52,7 +52,7 @@ Write-Host "[P129 BUILD] ZCC=$Zcc"
 # at address zero unless the Z80ASM linker is explicitly relocated. Since TR-DOS
 # loads P129BOOT.C at #6000, relocate the complete linked image to #6000 so every
 # CALL/JR/data reference emitted by SDCC addresses the resident image correctly.
-& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/memory.c src/map.c src/bank.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/memory.c src/map.c src/bank.c src/map_hw.asm src/range.c src/keyboard.asm src/speaker.asm src/trdos.asm src/ui.asm src/rtc.asm src/hdd.asm src/hdd_fat16.asm
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) {
     $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
