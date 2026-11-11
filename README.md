@@ -25,7 +25,7 @@ The build uses Z88DK for the resident image and SjASMPlus for TR-DOS packaging. 
 - [ ] Z88DK resident entry and #EF diagnostic boot confirmed on ATM emulator.
 - [ ] UINT32 range/check API.
 - [x] ATM physical-page allocator metadata and software W3 page-map transaction layer.
-- [x] W3/UI ownership lease state machine and UI write gate (0.3.19; software ownership only).
+- [x] W3/UI ownership lease state machine, write gate and software mapper lease integration (0.3.20; physical mapping not enabled).
 - [ ] Physical ATM page switching, cross-page memory operations and bank-manager integration.
 - [ ] TR-DOS disk service.
 - [ ] ATM native video.

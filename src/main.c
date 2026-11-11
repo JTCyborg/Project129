@@ -29,6 +29,7 @@ extern uint8_t p129_memory_selftest(void);
 extern uint8_t p129_memory_free_count(void);
 extern uint8_t p129_map_init(void);
 extern uint8_t p129_map_selftest(void);
+extern uint8_t p129_map_w3_lease_selftest(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -302,6 +303,14 @@ void p129_c_entry(void)
             result = p129_map_selftest();
             if (result == 0u) {
                 debug_puts("[MAP] W3 TRANSACTION COMMIT/ROLLBACK/PIN PASS\r\n");
+                result = p129_map_w3_lease_selftest();
+                if (result == 0u) {
+                    debug_puts("[MAP] W3 UI LEASE / PAGE PIN / RESTORE PASS\\r\\n");
+                } else {
+                    debug_puts("[MAP] W3 UI LEASE FAILED; TEST=");
+                    debug_hex8((uint8_t)result);
+                    debug_puts("\\r\\n");
+                }
             } else {
                 debug_puts("[MAP] TRANSACTION SELFTEST FAILED; TEST=");
                 debug_hex8((uint8_t)result);
