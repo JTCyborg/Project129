@@ -307,6 +307,14 @@ void p129_c_entry(void)
                 result = p129_map_w3_lease_selftest();
                 if (result == 0u) {
                     debug_puts("[MAP] W3 UI LEASE / PAGE PIN / RESTORE PASS\r\n");
+                    result = p129_map_w3_bank_selftest();
+                    if (result == 0u) {
+                        debug_puts("[BANK] NESTED W3 ENTER/LEAVE / PAGE PIN / RESTORE PASS\\r\\n");
+                    } else {
+                        debug_puts("[BANK] NESTED W3 SELFTEST FAILED; TEST=");
+                        debug_hex8((uint8_t)result);
+                        debug_puts("\\r\\n");
+                    }
                 } else {
                     debug_puts("[MAP] W3 UI LEASE FAILED; TEST=");
                     debug_hex8((uint8_t)result);
