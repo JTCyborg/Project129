@@ -32,6 +32,19 @@ _p129_trdos_preload:
         ld      hl,0C800h
         ld      (p129_trdos_buffer_ptr),hl
 
+        ; UI initialization has already opened the ATM shadow ports. Re-arm
+        ; the documented permanent DOSEN/TR-DOS ROM path immediately before
+        ; entering the TR-DOS sector reader. This is the same #0177/#3D2F
+        ; restoration sequence used by Project127 after DS12887 access.
+        ld      bc,p129_trdos_rom_ready
+        push    bc
+        ld      bc,02A53h
+        push    bc
+        ld      bc,00177h
+        ld      a,0C6h
+        jp      03D2Fh
+
+p129_trdos_rom_ready:
 p129_trdos_read_sector:
         ld      a,(p129_trdos_sector)
         cp      8
