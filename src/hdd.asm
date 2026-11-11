@@ -85,7 +85,7 @@ _p129_hdd_probe:
         ld      bc,P129_HDD_PORT_LBA_HIGH
         in      a,(c)
         or      a
-        jr      nz,p129_hdd_not_ata
+        jp      nz,p129_hdd_not_ata
 
         ; Read 256 IDENTIFY words using the split low/high data ports.
         ld      ix,p129_hdd_identify
