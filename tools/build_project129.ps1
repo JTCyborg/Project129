@@ -12,6 +12,17 @@ $ZccCommand = Get-Command $Zcc -ErrorAction SilentlyContinue
 if (-not $ZccCommand) { throw "Z88DK zcc not found: $Zcc" }
 $Zcc = $ZccCommand.Source
 
+# zcc launches z88dk-z80asm as a child process. When zcc is invoked by
+# absolute path, its bin directory may not be present in the inherited PATH.
+$Z88dkBin = Split-Path -Parent $Zcc
+$env:PATH = "$Z88dkBin;$env:PATH"
+$Z80Asm = Join-Path $Z88dkBin "z88dk-z80asm.exe"
+if (-not (Test-Path $Z80Asm)) {
+    throw "Z88DK assembler not found: $Z80Asm. Check the Z88DK installation."
+}
+Write-Host "[P129 BUILD] Z88DK_BIN=$Z88dkBin"
+Write-Host "[P129 BUILD] Z80ASM=$Z80Asm"
+
 if (-not (Test-Path $SjAsmPlus)) {
     $AssemblerCommand = Get-Command $SjAsmPlus -ErrorAction SilentlyContinue
     if (-not $AssemblerCommand) { throw "SjASMPlus not found: $SjAsmPlus" }
