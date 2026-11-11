@@ -21,6 +21,7 @@ PUBLIC _p129_hdd_error
 PUBLIC _p129_hdd_last_status
 PUBLIC _p129_hdd_capacity
 PUBLIC _p129_hdd_read_sector_lba28
+PUBLIC _p129_hdd_read_sector_c
 PUBLIC _p129_hdd_lba
 PUBLIC _p129_hdd_sector
 
@@ -249,6 +250,12 @@ p129_hdd_read_lba_done:
         or      a
         ret     z
         scf
+        ret
+
+_p129_hdd_read_sector_c:
+        call    _p129_hdd_read_sector_lba28
+        ld      l,a
+        ld      h,0
         ret
 
 ; Bounded wait for DRDY=1, BSY=0, ERR=0.

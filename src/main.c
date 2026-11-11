@@ -1,9 +1,12 @@
 #include <stdint.h>
+#include "bank.h"
 
 /* Project129 bootstrap: ATM UI is brought up before storage/services. */
 volatile uint8_t p129_debug_value;
 volatile uint8_t p129_ui_ready;
 static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
+static p129_bank_module_t p129_loaded_module;
+static uint32_t p129_loaded_module_size;
 
 extern volatile uint8_t p129_trdos_result;
 extern void p129_ui_init(void);
@@ -19,6 +22,7 @@ extern volatile char p129_rtc_minute[2];
 extern volatile char p129_rtc_second[2];
 extern void p129_hdd_probe(void);
 extern void p129_hdd_list_root(void);
+extern uint8_t p129_fat16_load_root_file(const char *name83, p129_bank_module_t *module, uint32_t *size_out);
 extern uint8_t p129_range_selftest(void);
 extern uint8_t p129_keyboard_init(void);
 extern uint8_t p129_keyboard_poll(void);
@@ -347,6 +351,31 @@ void p129_c_entry(void)
                 debug_hex8((uint8_t)result);
                 debug_puts("\r\n");
             }
+        }
+    }
+
+    /* Load a real DOS file into the banked physical-page module store. */
+    if (p129_hdd_present && p129_hdd_sector_valid &&
+        p129_memory_free_count() != 0u) {
+        static const char io_sys_name[11] = {'I','O',' ',' ',' ',' ',' ',' ','S','Y','S'};
+        uint8_t load_status;
+        debug_puts("[HDD] FAT16 LOAD IO.SYS BEGIN\r\n");
+        load_status = p129_fat16_load_root_file(io_sys_name,
+                                                &p129_loaded_module,
+                                                &p129_loaded_module_size);
+        if (load_status == 0u) {
+            debug_puts("[HDD] FAT16 FILE LOAD PASS; SIZE=");
+            debug_hex8((uint8_t)(p129_loaded_module_size >> 24));
+            debug_hex8((uint8_t)(p129_loaded_module_size >> 16));
+            debug_hex8((uint8_t)(p129_loaded_module_size >> 8));
+            debug_hex8((uint8_t)p129_loaded_module_size);
+            debug_puts("; PAGES=");
+            debug_hex8(p129_loaded_module.page_count);
+            debug_puts("\r\n");
+        } else {
+            debug_puts("[HDD] FAT16 FILE LOAD FAILED; ERROR=");
+            debug_hex8(load_status);
+            debug_puts("\r\n");
         }
     }
 
