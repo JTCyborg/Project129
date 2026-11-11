@@ -204,3 +204,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Each data sector is read by the existing Nemo IDE PIO transport into the resident sector buffer and copied to the allocated module through the multi-page W3 API. The module remains allocated after a successful load; the startup target is root file IO.SYS.
 - This milestone does not support subdirectories, long filenames, FAT12/FAT32, writes, or executing the loaded image. Cluster traversal is bounded by the required cluster count and validates each referenced cluster before reading it.
 - Build/runtime confirmation is pending. Expected runtime evidence is [HDD] FAT16 FILE LOAD PASS with exact byte size and allocated page count.
+
+
+### Resident image span correction (0.3.25 build)
+
+- The resident image is loaded at #6000 and the BASIC/TR-DOS bootstrap occupies #B000. The fixed resident code span is therefore #6000..#AFFF (20 KiB), not a single 16 KiB page.
+- This is compatible with the fixed ATM mapping: the lower part of the image resides in W1/P5 and the upper part in W2/P2; W2 remains mapped while the resident stack uses the top of the window at #BFFF.
+- The build guard now allows up to 20,480 bytes and explicitly rejects an image whose end reaches beyond #B000. It does not enlarge the physical page size, alter W3, or permit the image to overwrite the BASIC loader.
+- The user's 0.3.25 link output was 19,414 bytes, which ends at #ACD6 and leaves 1,066 bytes before #B000. Rebuild/runtime confirmation of this corrected guard remains pending.
