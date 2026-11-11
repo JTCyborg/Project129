@@ -81,7 +81,7 @@ $UiPutcMatch = [regex]::Match($MapText, '(?m)^_p129_ui_putc\s*=\s*\$([0-9A-Fa-f]
 $UiClockMatch = [regex]::Match($MapText, '(?m)^_p129_ui_clock_update\s*=\s*\$([0-9A-Fa-f]{4})')
 $RtcProbeMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_probe\s*=\s*\$([0-9A-Fa-f]{4})')
 $RtcReadMatch = [regex]::Match($MapText, '(?m)^_p129_rtc_read_current\s*=\s*\$([0-9A-Fa-f]{4})')
-if (-not $UiInitMatch.Success -or -not $UiPutcMatch.Success -or -not $UiClockMatch.Success) { throw "ATM UI entry points are missing from $MapFile" }
+if (-not $UiInitMatch.Success -or -not $UiPutcMatch.Success -or -not $UiClockMatch.Success) { throw "Required ATM UI entry points are missing from $MapFile" }
 if (-not $RtcProbeMatch.Success -or -not $RtcReadMatch.Success) { throw "DS12887 RTC entry points are missing from $MapFile" }
 $UiInitAddress = [Convert]::ToInt32($UiInitMatch.Groups[1].Value, 16)
 $UiPutcAddress = [Convert]::ToInt32($UiPutcMatch.Groups[1].Value, 16)
@@ -98,7 +98,7 @@ if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
 }
 foreach ($UiAddress in @($UiInitAddress, $UiPutcAddress, $UiClockAddress, $RtcProbeAddress, $RtcReadAddress)) {
     if ($UiAddress -lt 0x6000 -or $UiAddress -ge (0x6000 + $ResidentSize)) {
-        throw ("ATM UI entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
+        throw ("UI/RTC entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
     }
 }
 $ResidentBytes = [System.IO.File]::ReadAllBytes($Resident)
