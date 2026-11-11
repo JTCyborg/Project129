@@ -127,3 +127,12 @@ For every milestone record: source/build identifiers, exact build command/tool v
 ### 0.3.14 keyboard assembler correction
 
 The 0.3.13 assembler reached keyboard control-flow validation and reported an out-of-range relative branch (`jr z,p129_kbd_poll_matrix`, displacement +129). Replaced that branch with absolute conditional `jp`. This is a control-flow encoding correction only; keyboard compile/runtime remains pending user build and emulator validation.
+
+
+### Interrupt architecture evidence review — 2026-11-11
+
+- Added `docs/INTERRUPT_ARCHITECTURE.md` to separate Z80 architectural facts, Project127/Unreal emulator evidence, and ATM Turbo 2+ hardware claims still requiring confirmation.
+- Project127 reference: `src/kernel/p127_irq.asm` 0.6.0 uses a masked IM2 setup, I=#B0, fixed W2/P2 table/handler, and the #FF vector byte under its checked Unreal Speccy configuration (`FloatBus=0`, `FloatDOS=0`). It does not enable interrupts in the installer.
+- Do not generalize that emulator vector to all physical boards. A full 257-byte repeated trampoline table is the generic safe option when the IM2 acknowledge byte may vary; a single vector slot is valid only under a verified deterministic vector contract.
+- PIT, keyboard IRQ, external ZX-Bus IRQ and NMI-triggered Shadow ROM switching remain unverified for the current Project129 target. The existing EC07 timer article is about two sound-card timers, not proof of an ATM system PIT interrupt.
+- Project129 remains DI-only. No asynchronous IRQ/NMI or speculative hardware port programming is enabled until fixed-page placement, mapper safety, vector/acknowledge policy and live delivery are verified.
