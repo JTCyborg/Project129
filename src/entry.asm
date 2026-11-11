@@ -17,5 +17,5 @@ _p129_entry:
         ld      bc,0EFF7h
         out     (c),a
         call    _main
-.p129_idle:
-        jr      .p129_idle
+p129_idle:
+        jr      p129_idle
