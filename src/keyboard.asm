@@ -41,10 +41,11 @@ _p129_keyboard_init:
         ld      hl,_p129_keyboard_matrix
         ld      de,_p129_keyboard_previous
         ld      b,8
+        ld      a,#1F
 p129_kbd_init_clear:
-        ld      (hl),#1F
+        ld      (hl),a
         inc     hl
-        ld      (de),#1F
+        ld      (de),a
         inc     de
         djnz    p129_kbd_init_clear
 
@@ -220,19 +221,15 @@ _p129_keyboard_r4:
         db 0
 _p129_keyboard_r5:
         db 0
-p129_keyboard_prev_r3:
 _p129_keyboard_prev_r3:
         db #FF
-p129_keyboard_prev_r4:
 _p129_keyboard_prev_r4:
         db #FF
-p129_keyboard_prev_r5:
 _p129_keyboard_prev_r5:
         db #FF
 _p129_keyboard_snapshot_valid:
         db 0
 _p129_keyboard_matrix:
         ds 8,#1F
-p129_keyboard_previous:
 _p129_keyboard_previous:
         ds 8,#1F
