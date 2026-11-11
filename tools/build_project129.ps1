@@ -42,8 +42,8 @@ Remove-Item -Force -ErrorAction SilentlyContinue $Out
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
-Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.1.0"
-foreach ($Source in @("src/main.c", "src/entry.asm", "src/boot/main.asm")) {
+Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.0-UI-FIRST"
+foreach ($Source in @("src/main.c", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
@@ -52,7 +52,7 @@ Write-Host "[P129 BUILD] ZCC=$Zcc"
 # at address zero unless the Z80ASM linker is explicitly relocated. Since TR-DOS
 # loads P129BOOT.C at #6000, relocate the complete linked image to #6000 so every
 # CALL/JR/data reference emitted by SDCC addresses the resident image correctly.
-& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c
+& $Zcc +zx -v -O2 -compiler=sdcc --no-crt -Cl-r24576 -m -s -bn $Resident src/entry.asm src/main.c src/trdos.asm src/ui.asm
 if ($LASTEXITCODE -ne 0) { throw "Z88DK compile/link failed: $LASTEXITCODE" }
 if (-not (Test-Path $Resident)) {
     $Candidates = @(Get-ChildItem -Path $BuildDir -Filter "P129BOOT*" -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
@@ -74,9 +74,25 @@ if (-not $EntryMatch.Success -or [Convert]::ToInt32($EntryMatch.Groups[1].Value,
     throw "Invalid resident entry origin. Expected _p129_entry=#6000; inspect $MapFile"
 }
 if (-not $CEntryMatch.Success) { throw "C entry symbol _p129_c_entry is missing from $MapFile" }
+$TrdosMatch = [regex]::Match($MapText, '(?m)^_p129_trdos_preload\s*=\s*\$([0-9A-Fa-f]{4})')
+if (-not $TrdosMatch.Success) { throw "TR-DOS preload symbol _p129_trdos_preload is missing from $MapFile" }
+$UiInitMatch = [regex]::Match($MapText, '(?m)^_p129_ui_init\s*=\s*\$([0-9A-Fa-f]{4})')
+$UiPutcMatch = [regex]::Match($MapText, '(?m)^_p129_ui_putc\s*=\s*\$([0-9A-Fa-f]{4})')
+if (-not $UiInitMatch.Success -or -not $UiPutcMatch.Success) { throw "ATM UI entry points are missing from $MapFile" }
+$UiInitAddress = [Convert]::ToInt32($UiInitMatch.Groups[1].Value, 16)
+$UiPutcAddress = [Convert]::ToInt32($UiPutcMatch.Groups[1].Value, 16)
+$TrdosAddress = [Convert]::ToInt32($TrdosMatch.Groups[1].Value, 16)
 $CEntryAddress = [Convert]::ToInt32($CEntryMatch.Groups[1].Value, 16)
 if ($CEntryAddress -lt 0x6000 -or $CEntryAddress -ge (0x6000 + $ResidentSize)) {
     throw ("C entry is outside the loaded resident image: #{0:X4}" -f $CEntryAddress)
+}
+if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
+    throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
+}
+foreach ($UiAddress in @($UiInitAddress, $UiPutcAddress)) {
+    if ($UiAddress -lt 0x6000 -or $UiAddress -ge (0x6000 + $ResidentSize)) {
+        throw ("ATM UI entry point is outside the loaded resident image: #{0:X4}" -f $UiAddress)
+    }
 }
 $ResidentBytes = [System.IO.File]::ReadAllBytes($Resident)
 $CallFound = $false
@@ -87,7 +103,7 @@ for ($i = 0; $i -lt ($ResidentBytes.Length - 2); $i++) {
     }
 }
 if (-not $CallFound) { throw ("No CALL to linked C entry #{0:X4} found in resident binary" -f $CEntryAddress) }
-Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress)
+Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} UI_INIT=#{2:X4} UI_PUTC=#{3:X4} TRDOS_PRELOAD=#{4:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress, $UiInitAddress, $UiPutcAddress, $TrdosAddress)
 Write-Host "[P129 BUILD] RESIDENT=p129boot.C LOAD=#6000 SIZE=$ResidentSize"
 Write-Host "[P129 BUILD] LINK_MAP=$([System.IO.Path]::ChangeExtension($Resident, '.map'))"
 Write-Host "[P129 BUILD] LINK_SYMBOLS=$([System.IO.Path]::ChangeExtension($Resident, '.sym'))"
