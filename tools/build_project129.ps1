@@ -74,7 +74,7 @@ if (-not $EntryMatch.Success -or [Convert]::ToInt32($EntryMatch.Groups[1].Value,
     throw "Invalid resident entry origin. Expected _p129_entry=#6000; inspect $MapFile"
 }
 if (-not $CEntryMatch.Success) { throw "C entry symbol _p129_c_entry is missing from $MapFile" }
-$TrdosMatch = [regex]::Match($MapText, '(?m)^_p129_trdos_preload\\s*=\\s*\\$([0-9A-Fa-f]{4})')
+$TrdosMatch = [regex]::Match($MapText, '(?m)^_p129_trdos_preload\s*=\s*\$([0-9A-Fa-f]{4})')
 if (-not $TrdosMatch.Success) { throw "TR-DOS preload symbol _p129_trdos_preload is missing from $MapFile" }
 $TrdosAddress = [Convert]::ToInt32($TrdosMatch.Groups[1].Value, 16)
 $CEntryAddress = [Convert]::ToInt32($CEntryMatch.Groups[1].Value, 16)
