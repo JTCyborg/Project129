@@ -2,7 +2,7 @@
 ; Project127 FAT16 root-directory reader
 ; Module version: 0.1.0
 ; Derived from Project127/113 FAT16 BPB/root-directory flow.
-; Uses the existing NEMO-DIVIDE LBA28 single-sector transport in p127_hdd.asm.
+; Uses the Project129 NEMO-DIVIDE LBA28 single-sector transport; Project127 is the protocol reference.
 ; Read-only: no writes, DMA, IRQ, IM/EI or paging OUT.
 ; Output: each root entry is displayed in the ATM UI and mirrored to debug port #EF.
 ; ============================================================================
