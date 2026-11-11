@@ -1,0 +1,14 @@
+_p129_range_selftest            = $0065 ; addr, public, , , code_compiler, src/range.c:317
+_p129_range_validate            = $0000 ; addr, public, , , code_compiler, src/range.c:251
+l_p129_range_selftest_00102     = $007C ; addr, local, , , code_compiler, src/range.c:333
+l_p129_range_selftest_00104     = $009A ; addr, local, , , code_compiler, src/range.c:352
+l_p129_range_selftest_00106     = $00B8 ; addr, local, , , code_compiler, src/range.c:371
+l_p129_range_selftest_00108     = $00CF ; addr, local, , , code_compiler, src/range.c:388
+l_p129_range_selftest_00110     = $00E8 ; addr, local, , , code_compiler, src/range.c:406
+l_p129_range_selftest_00112     = $0103 ; addr, local, , , code_compiler, src/range.c:425
+l_p129_range_selftest_00114     = $011D ; addr, local, , , code_compiler, src/range.c:443
+l_p129_range_selftest_00116     = $0138 ; addr, local, , , code_compiler, src/range.c:461
+l_p129_range_selftest_00117     = $013A ; addr, local, , , code_compiler, src/range.c:463
+l_p129_range_validate_00102     = $0033 ; addr, local, , , code_compiler, src/range.c:282
+l_p129_range_validate_00104     = $0062 ; addr, local, , , code_compiler, src/range.c:310
+l_p129_range_validate_00105     = $0064 ; addr, local, , , code_compiler, src/range.c:312
