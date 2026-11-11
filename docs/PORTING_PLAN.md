@@ -163,3 +163,11 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - Added p129_map_w3_lease_begin/end orchestration. Begin quiesces the UI, enters HANDOFF, pins and commits an allocated W3 page in the software shadow map, and leaves the UI in HANDOFF. End restores W3=P0, releases the page pin, and resumes the UI.
 - Added an integrated lifecycle check that allocates a page, transfers ownership, checks the mapped page and pin count, restores the boot map, and frees the page.
 - This remains software-only: the shadow map is not physical ATM page-port state. No physical banked reads/writes or execution are enabled.
+
+
+### Bootstrap 0.3.21 — nested W3 bank ownership manager
+
+- Added an eight-level resident W3 bank ownership stack on top of the W3/UI lease.
+- The outer enter acquires the UI lease and pins the first allocated page. Nested enters pin the child page and switch the software W3 shadow while retaining the parent page pin. Leave restores the parent page and releases the child pin; the outer leave restores W3=P0 and resumes the UI.
+- Added a three-level nested enter/leave acceptance check, including depth, active-page and reference-count validation at each return.
+- This is a software ownership/page-map manager only. It does not yet execute code from W3, transfer the CPU stack, copy data through physical pages, or issue physical ATM page-mapper OUT operations. Those require the verified physical mapper backend and resident assembly trampoline.

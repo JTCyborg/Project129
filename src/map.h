@@ -25,5 +25,9 @@ uint8_t p129_map_selftest(void);
 uint8_t p129_map_w3_lease_begin(uint8_t page);
 uint8_t p129_map_w3_lease_end(void);
 uint8_t p129_map_w3_lease_selftest(void);
+uint8_t p129_map_w3_bank_enter(uint8_t page);
+uint8_t p129_map_w3_bank_leave(void);
+uint8_t p129_map_w3_bank_depth(void);
+uint8_t p129_map_w3_bank_selftest(void);
 
 #endif
