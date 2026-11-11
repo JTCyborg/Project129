@@ -20,7 +20,26 @@ static uint32_t p129_fat16_u32(const volatile uint8_t *p) {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
-static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,\n                            uint8_t fats, uint16_t roots, uint16_t total16,\n                            uint32_t total32, uint16_t fatsz,\n                            uint32_t data_start, uint32_t clusters) {\n    p129_debug_puts("[FAT16] BPB BPS="); p129_debug_hex16(bps);\n    p129_debug_puts(" SPC="); p129_debug_hex8(spc);\n    p129_debug_puts(" RESERVED="); p129_debug_hex16(reserved);\n    p129_debug_puts(" FATS="); p129_debug_hex8(fats);\n    p129_debug_puts(" ROOT_ENTRIES="); p129_debug_hex16(roots);\n    p129_debug_puts(" TOTAL16="); p129_debug_hex16(total16);\n    p129_debug_puts(" TOTAL32="); p129_debug_hex32(total32);\n    p129_debug_puts(" FAT_SIZE="); p129_debug_hex16(fatsz);\n    p129_debug_puts("\\r\\n[FAT16] DATA_START="); p129_debug_hex32(data_start);\n    p129_debug_puts(" CLUSTERS="); p129_debug_hex32(clusters);\n    p129_debug_puts("\\r\\n");\n}\n\nstatic uint8_t p129_fat16_read(uint32_t lba) {
+static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,
+                            uint8_t fats, uint16_t roots, uint16_t total16,
+                            uint32_t total32, uint16_t fatsz,
+                            uint32_t data_start, uint32_t clusters) {
+    p129_debug_puts("[FAT16] BPB BPS="); p129_debug_hex16(bps);
+    p129_debug_puts(" SPC="); p129_debug_hex8(spc);
+    p129_debug_puts(" RESERVED="); p129_debug_hex16(reserved);
+    p129_debug_puts(" FATS="); p129_debug_hex8(fats);
+    p129_debug_puts(" ROOT_ENTRIES="); p129_debug_hex16(roots);
+    p129_debug_puts(" TOTAL16="); p129_debug_hex16(total16);
+    p129_debug_puts(" TOTAL32="); p129_debug_hex32(total32);
+    p129_debug_puts(" FAT_SIZE="); p129_debug_hex16(fatsz);
+    p129_debug_puts("\\r\
+[FAT16] DATA_START="); p129_debug_hex32(data_start);
+    p129_debug_puts(" CLUSTERS="); p129_debug_hex32(clusters);
+    p129_debug_puts("\\r\
+");
+}
+
+static uint8_t p129_fat16_read(uint32_t lba) {
     if (lba > 0x0FFFFFFFUL) return 1u;
     p129_hdd_lba[0]=(uint8_t)lba;
     p129_hdd_lba[1]=(uint8_t)(lba>>8);
@@ -38,21 +57,26 @@ uint8_t p129_fat16_load_root_file(const char *name83,
     uint8_t spc, fats, i, found=0u;
     uint16_t reserved, root_entries, fat_size, root_sectors;
     uint16_t start_cluster=0u, cluster;
-    uint32_t file_size=0UL, total_sectors, total32, fat_start, root_start;\n    uint16_t bps, total16;
+    uint32_t file_size=0UL, total_sectors, total32, fat_start, root_start;
+    uint16_t bps, total16;
     uint32_t data_start, volume_end, cluster_count, cluster_bytes;
     uint32_t root_index, root_lba, file_offset=0UL, clusters_needed, step;
     volatile uint8_t *sector=p129_hdd_sector;
     if(!name83 || !module) return 1u;
     p129_bank_module_init(module);
     if(p129_fat16_read(P129_FAT16_PARTITION_LBA)) return 6u;
-    if(p129_fat16_u16(sector+11)!=512u) return 2u;
+    bps=p129_fat16_u16(sector+11);
     spc=sector[13]; reserved=p129_fat16_u16(sector+14);
     fats=sector[16]; root_entries=p129_fat16_u16(sector+17);
-    total_sectors=p129_fat16_u16(sector+19);
-    if(!total_sectors) total_sectors=p129_fat16_u32(sector+32);
+    total16=p129_fat16_u16(sector+19);
+    total32=p129_fat16_u32(sector+32);
+    total_sectors=total16 ? total16 : total32;
     fat_size=p129_fat16_u16(sector+22);
-    if(!spc || spc>128u || (spc&(spc-1u)) || !reserved ||
-       !fats || !root_entries || !fat_size || !total_sectors) return 2u;
+    if(bps!=512u || !spc || spc>128u || (spc&(spc-1u)) || !reserved ||
+       !fats || !root_entries || !fat_size || !total_sectors) {
+        p129_fat16_diag(bps,spc,reserved,fats,root_entries,total16,total32,fat_size,0UL,0UL);
+        return 2u;
+    }
     root_sectors=(uint16_t)(((uint32_t)root_entries+15UL)>>4);
     fat_start=P129_FAT16_PARTITION_LBA+reserved;
     root_start=fat_start+(uint32_t)fats*fat_size;
@@ -64,6 +88,7 @@ uint8_t p129_fat16_load_root_file(const char *name83,
        ((uint32_t)p129_hdd_capacity[2]<<16) |
        ((uint32_t)p129_hdd_capacity[3]<<24))) return 3u;
     cluster_count=(volume_end-data_start)/spc;
+    p129_fat16_diag(bps,spc,reserved,fats,root_entries,total16,total32,fat_size,data_start,cluster_count);
     if(cluster_count<4085UL || cluster_count>=65525UL) return 2u;
     if((cluster_count+2UL)*2UL>(uint32_t)fat_size*512UL) return 3u;
     cluster_bytes=(uint32_t)spc*512UL;
