@@ -6,6 +6,7 @@
 
 SECTION CODE
 PUBLIC _p129_trdos_preload
+PUBLIC _p129_trdos_result
 
 _p129_trdos_preload:
         push    af
@@ -88,12 +89,12 @@ p129_trdos_read_sector:
 
 p129_trdos_read_complete:
         xor     a
-        ld      (p129_trdos_result),a
+        ld      (_p129_trdos_result),a
         jr      p129_trdos_restore
 
 p129_trdos_read_failed:
         ld      a,1
-        ld      (p129_trdos_result),a
+        ld      (_p129_trdos_result),a
 
 p129_trdos_restore:
         ld      sp,(p129_trdos_saved_sp)
@@ -113,7 +114,7 @@ p129_trdos_restore:
         pop     af
 
         ; Z88DK SDCC 16-bit return value: HL=0 on success, HL=1 on error.
-        ld      a,(p129_trdos_result)
+        ld      a,(_p129_trdos_result)
         ld      l,a
         ld      h,0
         ret
@@ -123,4 +124,4 @@ p129_trdos_buffer_ptr:   dw 0C800h
 p129_trdos_sector:       db 0
 p129_trdos_io_error:     db 0
 p129_trdos_io_status:    db 0
-p129_trdos_result:       db 0
+_p129_trdos_result:      db 0
