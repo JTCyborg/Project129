@@ -7,6 +7,7 @@ static volatile uint8_t * const p129_catalogue = (volatile uint8_t *)0xC800;
 
 extern uint16_t p129_trdos_preload(void);
 extern void p129_ui_init(void);
+extern void p129_ui_putc(uint8_t value);
 
 static void debug_putc(uint8_t value)
 {
@@ -18,10 +19,7 @@ static void debug_putc(uint8_t value)
     __endasm;
 
     if (p129_ui_ready) {
-        __asm
-            ld a,(_p129_debug_value)
-            call _p129_ui_putc
-        __endasm;
+        p129_ui_putc(value);
     }
 }
 
