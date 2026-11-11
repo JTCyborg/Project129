@@ -14,6 +14,7 @@
 /* Software shadow only. No ATM page-port I/O is issued by this module. */
 uint8_t p129_map_init(void);
 uint8_t p129_map_get_window(uint8_t window);
+uint16_t p129_map_window_port(uint8_t window);
 uint8_t p129_map_encode_page(uint8_t page);
 uint8_t p129_map_txn_begin(uint8_t window, uint8_t page, uint8_t protected_mask);
 uint8_t p129_map_txn_commit(void);

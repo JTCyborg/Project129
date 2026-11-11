@@ -37,6 +37,13 @@ uint8_t p129_map_get_window(uint8_t window)
     return p129_map_shadow[window];
 }
 
+uint16_t p129_map_window_port(uint8_t window)
+{
+    static const uint16_t ports[P129_MAP_WINDOW_COUNT] = {0x3FF7u, 0x7FF7u, 0xBFF7u, 0xFFF7u};
+    if (window >= P129_MAP_WINDOW_COUNT) return 0u;
+    return ports[window];
+}
+
 uint8_t p129_map_encode_page(uint8_t page)
 {
     if (page >= P129_MEMORY_PAGE_COUNT) return P129_MAP_PAGE_ROM;
@@ -118,6 +125,11 @@ uint8_t p129_map_selftest(void)
         p129_map_get_window(1u) != 5u ||
         p129_map_get_window(2u) != 2u ||
         p129_map_get_window(3u) != 0u) return 2u;
+    if (p129_map_window_port(0u) != 0x3FF7u ||
+        p129_map_window_port(1u) != 0x7FF7u ||
+        p129_map_window_port(2u) != 0xBFF7u ||
+        p129_map_window_port(3u) != 0xFFF7u ||
+        p129_map_window_port(4u) != 0u) return 3u;
     if (p129_map_encode_page(0u) != 0x7Fu ||
         p129_map_encode_page(1u) != 0x7Eu ||
         p129_map_encode_page(63u) != 0x40u ||

@@ -107,12 +107,13 @@ $MemoryReservedMatch = [regex]::Match($MapText, '(?m)^_p129_page_is_reserved\s*=
 $MemoryFreeCountMatch = [regex]::Match($MapText, '(?m)^_p129_memory_free_count\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapInitMatch = [regex]::Match($MapText, '(?m)^_p129_map_init\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapSelftestMatch = [regex]::Match($MapText, '(?m)^_p129_map_selftest\s*=\s*\$([0-9A-Fa-f]{4})')
+$MapPortMatch = [regex]::Match($MapText, '(?m)^_p129_map_window_port\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapBeginMatch = [regex]::Match($MapText, '(?m)^_p129_map_txn_begin\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapCommitMatch = [regex]::Match($MapText, '(?m)^_p129_map_txn_commit\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapRollbackMatch = [regex]::Match($MapText, '(?m)^_p129_map_txn_rollback\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapAcceptMatch = [regex]::Match($MapText, '(?m)^_p129_map_txn_accept\s*=\s*\$([0-9A-Fa-f]{4})')
 $MapRestoreMatch = [regex]::Match($MapText, '(?m)^_p129_map_restore_boot\s*=\s*\$([0-9A-Fa-f]{4})')
-if (-not $MapInitMatch.Success -or -not $MapSelftestMatch.Success -or -not $MapBeginMatch.Success -or -not $MapCommitMatch.Success -or -not $MapRollbackMatch.Success -or -not $MapAcceptMatch.Success -or -not $MapRestoreMatch.Success) {
+if (-not $MapInitMatch.Success -or -not $MapSelftestMatch.Success -or -not $MapPortMatch.Success -or -not $MapBeginMatch.Success -or -not $MapCommitMatch.Success -or -not $MapRollbackMatch.Success -or -not $MapAcceptMatch.Success -or -not $MapRestoreMatch.Success) {
     throw "Software page mapper API symbols are missing from $MapFile"
 }
 if (-not $MemoryInitMatch.Success -or -not $MemorySelftestMatch.Success -or -not $MemoryAllocMatch.Success -or -not $MemoryFreeMatch.Success -or -not $MemoryPinMatch.Success -or -not $MemoryUnpinMatch.Success -or -not $MemoryReserveMatch.Success -or -not $MemoryRefcountMatch.Success -or -not $MemoryReservedMatch.Success -or -not $MemoryFreeCountMatch.Success) {
@@ -139,7 +140,7 @@ if ($TrdosAddress -lt 0x6000 -or $TrdosAddress -ge (0x6000 + $ResidentSize)) {
     throw ("TR-DOS preload is outside the loaded resident image: #{0:X4}" -f $TrdosAddress)
 }
 $MemoryAddresses = @($MemoryInitMatch, $MemorySelftestMatch, $MemoryAllocMatch, $MemoryFreeMatch, $MemoryPinMatch, $MemoryUnpinMatch, $MemoryReserveMatch, $MemoryRefcountMatch, $MemoryReservedMatch, $MemoryFreeCountMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
-$MapAddresses = @($MapInitMatch, $MapSelftestMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
+$MapAddresses = @($MapInitMatch, $MapSelftestMatch, $MapPortMatch, $MapBeginMatch, $MapCommitMatch, $MapRollbackMatch, $MapAcceptMatch, $MapRestoreMatch) | ForEach-Object { [Convert]::ToInt32($_.Groups[1].Value, 16) }
 foreach ($MapAddress in $MapAddresses) {
     if ($MapAddress -lt 0x6000 -or $MapAddress -ge (0x6000 + $ResidentSize)) {
         throw ("Software mapper API entry point is outside the loaded resident image: #{0:X4}" -f $MapAddress)
@@ -166,7 +167,7 @@ for ($i = 0; $i -lt ($ResidentBytes.Length - 2); $i++) {
 if (-not $CallFound) { throw ("No CALL to linked C entry #{0:X4} found in resident binary" -f $CEntryAddress) }
 Write-Host ("[P129 BUILD] ENTRY=#{0:X4} C_ENTRY=#{1:X4} UI_INIT=#{2:X4} UI_PUTC=#{3:X4} TRDOS_PRELOAD=#{4:X4} RTC_PROBE=#{5:X4} RTC_READ=#{6:X4} UI_CLOCK=#{7:X4} HDD_PROBE=#{8:X4} HDD_LIST=#{9:X4} RANGE_VALIDATE=#{10:X4} RANGE_SELFTEST=#{11:X4} KBD_INIT=#{12:X4} KBD_POLL=#{13:X4} SPEAKER_TEST=#{14:X4} HANDOFF=VERIFIED" -f 0x6000, $CEntryAddress, $UiInitAddress, $UiPutcAddress, $TrdosAddress, $RtcProbeAddress, $RtcReadAddress, $UiClockAddress, $HddProbeAddress, $HddListAddress, $RangeValidateAddress, $RangeSelftestAddress, $KeyboardInitAddress, $KeyboardPollAddress, $SpeakerTestAddress)
 Write-Host ("[P129 BUILD] MEMORY_INIT=#{0:X4} MEMORY_SELFTEST=#{1:X4} PAGE_ALLOC=#{2:X4} PAGE_FREE=#{3:X4} PAGE_PIN=#{4:X4} PAGE_UNPIN=#{5:X4}" -f $MemoryAddresses[0], $MemoryAddresses[1], $MemoryAddresses[2], $MemoryAddresses[3], $MemoryAddresses[4], $MemoryAddresses[5])
-Write-Host ("[P129 BUILD] MAP_INIT=#{0:X4} MAP_SELFTEST=#{1:X4} MAP_BEGIN=#{2:X4} MAP_COMMIT=#{3:X4} MAP_ROLLBACK=#{4:X4} MAP_ACCEPT=#{5:X4} MAP_RESTORE=#{6:X4}" -f $MapAddresses[0], $MapAddresses[1], $MapAddresses[2], $MapAddresses[3], $MapAddresses[4], $MapAddresses[5], $MapAddresses[6])
+Write-Host ("[P129 BUILD] MAP_INIT=#{0:X4} MAP_SELFTEST=#{1:X4} MAP_PORT=#{2:X4} MAP_BEGIN=#{3:X4} MAP_COMMIT=#{4:X4} MAP_ROLLBACK=#{5:X4} MAP_ACCEPT=#{6:X4} MAP_RESTORE=#{7:X4}" -f $MapAddresses[0], $MapAddresses[1], $MapAddresses[2], $MapAddresses[3], $MapAddresses[4], $MapAddresses[5], $MapAddresses[6], $MapAddresses[7])
 Write-Host "[P129 BUILD] RESIDENT=p129boot.C LOAD=#6000 SIZE=$ResidentSize"
 Write-Host "[P129 BUILD] LINK_MAP=$([System.IO.Path]::ChangeExtension($Resident, '.map'))"
 Write-Host "[P129 BUILD] LINK_SYMBOLS=$([System.IO.Path]::ChangeExtension($Resident, '.sym'))"
