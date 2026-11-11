@@ -32,11 +32,9 @@ static void p129_fat16_diag(uint16_t bps, uint8_t spc, uint16_t reserved,
     p129_debug_puts(" TOTAL16="); p129_debug_hex16(total16);
     p129_debug_puts(" TOTAL32="); p129_debug_hex32(total32);
     p129_debug_puts(" FAT_SIZE="); p129_debug_hex16(fatsz);
-    p129_debug_puts("\\r\
-[FAT16] DATA_START="); p129_debug_hex32(data_start);
+    p129_debug_puts("\r\n[FAT16] DATA_START="); p129_debug_hex32(data_start);
     p129_debug_puts(" CLUSTERS="); p129_debug_hex32(clusters);
-    p129_debug_puts("\\r\
-");
+    p129_debug_puts("\r\n");
 }
 
 static uint8_t p129_fat16_read(uint32_t lba) {
