@@ -1,12 +1,15 @@
 ; Project129 Z88DK resident entry.
-; Linked at #6000 as the first bytes of P129BOOT.C.
-; Preserves the Project127 host paging/stack entry sequence.
+; This must be the first executable bytes of P129BOOT.C at #6000.
+; Do not use code_crt_init here: --no-crt has no CRT dispatcher to call it.
 
-SECTION code_crt_init
+SECTION CODE
 PUBLIC _p129_entry
 EXTERN _main
 
 _p129_entry:
+        ld      a,'>'
+        ld      bc,00EFh
+        out     (c),a
         di
         ld      sp,0BFFFh
         ld      a,010h
