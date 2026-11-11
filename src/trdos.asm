@@ -124,4 +124,4 @@ p129_trdos_buffer_ptr:   dw 0C800h
 p129_trdos_sector:       db 0
 p129_trdos_io_error:     db 0
 p129_trdos_io_status:    db 0
-__p129_trdos_result:      db 0
+_p129_trdos_result:      db 0
