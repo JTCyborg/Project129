@@ -43,7 +43,7 @@ Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.
 Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
 Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.3.24-MULTIPAGE-MODULE-IO"
-foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
+foreach ($Source in @("src/main.c", "src/memory.c", "src/memory.h", "src/map.c", "src/bank.c", "src/bank.h", "src/map.h", "src/map_hw.asm", "src/entry.asm", "src/trdos.asm", "src/ui.asm", "src/rtc.asm", "src/hdd.asm", "src/hdd_fat16.asm", "src/range.c", "src/keyboard.asm", "src/speaker.asm", "src/boot/main.asm")) {
     $Hash = (Get-FileHash $Source -Algorithm SHA256).Hash.Substring(0, 8)
     Write-Host "[P129 BUILD] $Source=$Hash"
 }
