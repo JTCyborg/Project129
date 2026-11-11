@@ -56,6 +56,8 @@ p129_kbd_init_clear:
         ld      (_p129_keyboard_xt_active),a
 p129_kbd_init_done:
         ld      a,(_p129_keyboard_xt_active)
+        ld      l,a
+        ld      h,0
         ret
 
 ; A=2 or A=3. Carry indicates handshake failure.
@@ -116,7 +118,7 @@ _p129_keyboard_poll:
         ld      a,(_p129_keyboard_prev_r5)
         cp      b
         jr      nz,p129_kbd_event
-        xor     a
+        ld      hl,0
         ret
 
 p129_kbd_event:
@@ -126,13 +128,13 @@ p129_kbd_event:
         ld      (_p129_keyboard_prev_r4),a
         ld      a,(_p129_keyboard_r5)
         ld      (_p129_keyboard_prev_r5),a
-        ld      a,1
+        ld      hl,1
         ret
 
 p129_kbd_xt_recover:
         ld      a,P129_KBD_MODE_XT
         call    p129_kbd_set_mode
-        xor     a
+        ld      hl,0
         ret
 
 p129_kbd_read_mode2:
@@ -166,7 +168,7 @@ p129_kbd_matrix_compare:
         inc     de
         inc     hl
         djnz    p129_kbd_matrix_compare
-        xor     a
+        ld      hl,0
         ret
 
 p129_kbd_matrix_changed:
@@ -176,7 +178,7 @@ p129_kbd_matrix_changed:
         ldir
         ld      a,1
         ld      (_p129_keyboard_snapshot_valid),a
-        ld      a,1
+        ld      hl,1
         ret
 
 p129_kbd_scan_matrix:
