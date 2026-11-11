@@ -16,13 +16,16 @@ if errorlevel 1 (
     goto :failed
 )
 
-if not exist "tools\sjasmplus.exe" (
+if exist "tools\sjasmplus.exe" (
+    set "SJASMPLUS=.\tools\sjasmplus.exe"
+) else (
     where sjasmplus >nul 2>nul
     if errorlevel 1 (
         echo [ERROR] SjASMPlus was not found.
         echo [ERROR] Put sjasmplus.exe in tools\ or add it to PATH.
         goto :failed
     )
+    set "SJASMPLUS=sjasmplus"
 )
 
 if not exist "tools\build_project129.ps1" (
