@@ -39,6 +39,8 @@ if ([System.IO.Path]::GetFileName($Out) -ne "disk_A.trd") {
 $Resident = Join-Path $BuildDir "P129BOOT.bin"
 Remove-Item -Force -ErrorAction SilentlyContinue $Resident
 Remove-Item -Force -ErrorAction SilentlyContinue $Out
+Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.map")
+Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $BuildDir "P129BOOT.sym")
 
 Write-Host "[P129 BUILD] VERSION=BOOTSTRAP-0.1.0"
 foreach ($Source in @("src/main.c", "src/entry.asm", "src/boot/main.asm")) {
