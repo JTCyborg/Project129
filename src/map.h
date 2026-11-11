@@ -22,5 +22,8 @@ uint8_t p129_map_txn_rollback(void);
 uint8_t p129_map_txn_accept(void);
 uint8_t p129_map_restore_boot(void);
 uint8_t p129_map_selftest(void);
+uint8_t p129_map_w3_lease_begin(uint8_t page);
+uint8_t p129_map_w3_lease_end(void);
+uint8_t p129_map_w3_lease_selftest(void);
 
 #endif

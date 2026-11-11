@@ -14,6 +14,11 @@ static uint8_t p129_map_txn_window;
 static uint8_t p129_map_txn_new_page;
 static uint8_t p129_map_txn_old_page;
 static uint8_t p129_map_txn_snapshot[P129_MAP_WINDOW_COUNT];
+static uint8_t p129_map_w3_lease_active;
+extern uint8_t p129_ui_quiesce(void);
+extern uint8_t p129_ui_handoff_begin(void);
+extern uint8_t p129_ui_handoff_end(void);
+extern uint8_t p129_ui_resume(void);
 
 uint8_t p129_map_init(void)
 {
@@ -113,6 +118,62 @@ uint8_t p129_map_restore_boot(void)
         if (p129_page_unpin(old_page) != 0u) return 2u;
     }
     p129_map_shadow[3] = 0u;
+    return 0u;
+}
+
+/* W3 ownership orchestration over the software shadow map only. */
+uint8_t p129_map_w3_lease_begin(uint8_t page)
+{
+    uint8_t status;
+    if (!p129_map_ready || p129_map_w3_lease_active) return 1u;
+    status = p129_ui_quiesce();
+    if (status != 0u) return 2u;
+    status = p129_ui_handoff_begin();
+    if (status != 0u) {
+        (void)p129_ui_resume();
+        return 3u;
+    }
+    status = p129_map_txn_begin(3u, page, P129_MAP_PROTECT_FIXED);
+    if (status == 0u) status = p129_map_txn_commit();
+    if (status == 0u) status = p129_map_txn_accept();
+    if (status != 0u) {
+        if (p129_map_txn_active) (void)p129_map_txn_rollback();
+        (void)p129_ui_handoff_end();
+        (void)p129_ui_resume();
+        return (uint8_t)(0x10u | status);
+    }
+    p129_map_w3_lease_active = 1u;
+    return 0u;
+}
+
+uint8_t p129_map_w3_lease_end(void)
+{
+    uint8_t status;
+    if (!p129_map_w3_lease_active) return 1u;
+    status = p129_map_restore_boot();
+    if (status != 0u) return 2u;
+    status = p129_ui_handoff_end();
+    if (status != 0u) return 3u;
+    status = p129_ui_resume();
+    if (status != 0u) return 4u;
+    p129_map_w3_lease_active = 0u;
+    return 0u;
+}
+
+uint8_t p129_map_w3_lease_selftest(void)
+{
+    uint8_t page;
+    if (p129_map_w3_lease_active) return 1u;
+    page = p129_page_alloc_topdown();
+    if (page == P129_MEMORY_PAGE_NONE) return 2u;
+    if (p129_map_w3_lease_begin(page) != 0u) {
+        if (p129_page_refcount(page) == 0u) (void)p129_page_free(page);
+        return 3u;
+    }
+    if (p129_map_get_window(3u) != page || p129_page_refcount(page) != 1u) return 4u;
+    if (p129_map_w3_lease_end() != 0u) return 5u;
+    if (p129_map_get_window(3u) != 0u || p129_page_refcount(page) != 0u) return 6u;
+    if (p129_page_free(page) != 0u) return 7u;
     return 0u;
 }
 

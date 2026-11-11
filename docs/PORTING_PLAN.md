@@ -156,3 +156,10 @@ The 0.3.13 assembler reached keyboard control-flow validation and reported an ou
 - UI character output and RTC clock refresh are gated: they perform no console work unless the state is ACTIVE. This prevents normal UI writes while W3 is handed to a banked-memory owner.
 - Exported quiesce, handoff-begin, handoff-end and resume entry points for the forthcoming bank manager. Startup validates the legal transition chain and rejection of out-of-order transitions, then leaves the UI ACTIVE.
 - This is an ownership gate, not the physical page mapper. Existing UI W3 video-page writes remain the only direct W3 page-port operations; the software page-map transaction API is not yet wired to the lease or to physical OUT. Arbitrary W3 bank execution is not enabled.
+
+
+### Bootstrap 0.3.20 — W3/UI lease and page-map integration
+
+- Added p129_map_w3_lease_begin/end orchestration. Begin quiesces the UI, enters HANDOFF, pins and commits an allocated W3 page in the software shadow map, and leaves the UI in HANDOFF. End restores W3=P0, releases the page pin, and resumes the UI.
+- Added an integrated lifecycle check that allocates a page, transfers ownership, checks the mapped page and pin count, restores the boot map, and frees the page.
+- This remains software-only: the shadow map is not physical ATM page-port state. No physical banked reads/writes or execution are enabled.
