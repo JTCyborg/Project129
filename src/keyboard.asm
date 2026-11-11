@@ -88,7 +88,7 @@ p129_kbd_mode_fail:
 _p129_keyboard_poll:
         ld      a,(_p129_keyboard_xt_active)
         or      a
-        jr      z,p129_kbd_poll_matrix
+        jp      z,p129_kbd_poll_matrix
         call    p129_kbd_read_mode2
         ld      a,P129_KBD_MODE_EVENT
         call    p129_kbd_set_mode
