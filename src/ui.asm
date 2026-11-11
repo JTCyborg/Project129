@@ -154,7 +154,6 @@ p129_ui_done:
         ret
 
 p129_ui_clear:
-        call    p129_ui_map_pages
         ; Character plane: physical page 7 mapped into W3 only.
         call    p129_ui_map_chars
         ld      hl,0C1C0h
@@ -247,7 +246,6 @@ p129_ui_write_char:
         ld      (p129_ui_write_row),a
         ld      a,e
         ld      (p129_ui_write_col),a
-        call    p129_ui_map_pages
         ld      a,(p129_ui_write_row)
         ld      l,a
         ld      h,0
