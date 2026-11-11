@@ -5,6 +5,7 @@
 SECTION CODE
 PUBLIC _p129_entry
 EXTERN _p129_c_entry
+EXTERN _p129_trdos_preload
 
 _p129_entry:
         ld      a,'>'
@@ -24,6 +25,17 @@ _p129_entry:
         ld      a,'C'
         ld      bc,00EFh
         out     (c),a
+
+        ; Run the ROM disk call directly from the resident ASM entry, with
+        ; the same caller/stack shape as Project127's proven boot path.
+        ld      a,'D'
+        ld      bc,00EFh
+        out     (c),a
+        call    _p129_trdos_preload
+        ld      a,'T'
+        ld      bc,00EFh
+        out     (c),a
+
         call    _p129_c_entry
 
 ; main() is expected to remain resident forever. Reaching this marker means
