@@ -18,6 +18,16 @@ extern volatile char p129_rtc_minute[2];
 extern volatile char p129_rtc_second[2];
 extern void p129_hdd_probe(void);
 extern void p129_hdd_list_root(void);
+extern uint8_t p129_range_selftest(void);
+extern uint8_t p129_keyboard_init(void);
+extern uint8_t p129_keyboard_poll(void);
+extern volatile uint8_t p129_keyboard_xt_active;
+extern volatile uint8_t p129_keyboard_lastscan;
+extern volatile uint8_t p129_keyboard_r2;
+extern volatile uint8_t p129_keyboard_r3;
+extern volatile uint8_t p129_keyboard_r4;
+extern volatile uint8_t p129_keyboard_r5;
+extern volatile uint8_t p129_keyboard_matrix[8];
 extern volatile uint8_t p129_hdd_present;
 extern volatile uint8_t p129_hdd_sector_valid;
 extern volatile uint8_t p129_hdd_error;
@@ -114,7 +124,7 @@ void p129_c_entry(void)
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
     debug_puts("[P129] Z88DK C ENTRY\r\n");
-    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.10-FAT16-ROOT\r\n");
+    debug_puts("[P129] BUILD: BOOTSTRAP-0.3.12-KEYBOARD\r\n");
     debug_puts("[P129] DEBUG PORT EF READY\r\n");
 
     /* The resident ASM entry completed the legacy TR-DOS call before C. */
@@ -193,6 +203,24 @@ void p129_c_entry(void)
         debug_hex8(p129_hdd_last_status);
         debug_puts("\r\n");
     }
+    debug_puts("[RANGE] UINT32 API SELFTEST BEGIN\r\n");
+    {
+        uint8_t range_error = p129_range_selftest();
+        if (range_error == 0) {
+            debug_puts("[RANGE] UINT32 API SELFTEST PASS; LIMIT=00100000\r\n");
+        } else {
+            debug_puts("[RANGE] UINT32 API SELFTEST FAILED; TEST=");
+            debug_hex8(range_error);
+            debug_puts("\r\n");
+        }
+    }
+    debug_puts("[KBD] INIT\r\n");
+    if (p129_keyboard_init()) {
+        debug_puts("[KBD] ATM XT ACTIVE\r\n");
+    } else {
+        debug_puts("[KBD] ZX FALLBACK\r\n");
+    }
+
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
     rtc_poll_divider = 0;
@@ -200,6 +228,29 @@ void p129_c_entry(void)
     last_second_tens = p129_rtc_second[0];
     last_second_ones = p129_rtc_second[1];
     for (;;) {
+        if (p129_keyboard_poll()) {
+            if (p129_keyboard_xt_active) {
+                debug_puts("[KBD] LAST=");
+                debug_hex8(p129_keyboard_lastscan);
+                debug_puts(" R2=");
+                debug_hex8(p129_keyboard_r2);
+                debug_puts(" R3=");
+                debug_hex8(p129_keyboard_r3);
+                debug_puts(" R4=");
+                debug_hex8(p129_keyboard_r4);
+                debug_puts(" R5=");
+                debug_hex8(p129_keyboard_r5);
+                debug_puts("\r\n");
+            } else {
+                uint8_t k;
+                debug_puts("[KBD] ZX MATRIX=");
+                for (k = 0; k < 8; ++k) {
+                    debug_hex8(p129_keyboard_matrix[k]);
+                    debug_putc(' ');
+                }
+                debug_puts("\r\n");
+            }
+        }
         if (!p129_rtc_available) continue;
         ++rtc_poll_divider;
         if (rtc_poll_divider == 0) {
