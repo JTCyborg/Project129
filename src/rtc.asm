@@ -153,7 +153,7 @@ p129_rtc_open:
 p129_rtc_open_smuc:
         ; Keep the documented SMUC selector pattern; do not write 000h.
         ld      bc,0FFBAh
-        ld      a,#71
+        ld      a,071h
         out     (c),a
 p129_rtc_open_done:
         pop     bc
@@ -345,18 +345,17 @@ p129_rtc_restore_dosen:
         ld      bc,02A53h
         push    bc
         ld      bc,00177h
-        ld      a,#C6
+        ld      a,0C6h
         jp      03D2Fh
 p129_rtc_restore_dosen_done:
         pop     bc
         pop     af
         ; The ROM call may have changed the active W3 mapping.
         ld      a,07Fh
-        ld      bc,#FFF7
+        ld      bc,0FFF7h
         out     (c),a
         ret
 
-SECTION CODE
 _p129_rtc_available: db 0
 _p129_rtc_backend:   db 0
 p129_rtc_status_a:   db 0
