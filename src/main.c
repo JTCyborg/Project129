@@ -99,6 +99,10 @@ void p129_c_entry(void)
 {
     uint16_t result;
     uint8_t files;
+    volatile uint16_t rtc_poll_divider;
+    uint8_t rtc_poll_phase;
+    char last_second_tens;
+    char last_second_ones;
 
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
@@ -159,5 +163,25 @@ void p129_c_entry(void)
     }
     debug_puts("[P129] BOOTSTRAP IDLE\r\n");
 
-    for (;;) {}
+    rtc_poll_divider = 0;
+    rtc_poll_phase = 0;
+    last_second_tens = p129_rtc_second[0];
+    last_second_ones = p129_rtc_second[1];
+    for (;;) {
+        if (!p129_rtc_available) continue;
+        ++rtc_poll_divider;
+        if (rtc_poll_divider == 0) {
+            ++rtc_poll_phase;
+            if (rtc_poll_phase >= 10) {
+                rtc_poll_phase = 0;
+                p129_rtc_read_current();
+                if (p129_rtc_second[0] != last_second_tens ||
+                    p129_rtc_second[1] != last_second_ones) {
+                    last_second_tens = p129_rtc_second[0];
+                    last_second_ones = p129_rtc_second[1];
+                    p129_ui_clock_update();
+                }
+            }
+        }
+    }
 }
