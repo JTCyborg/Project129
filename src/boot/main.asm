@@ -60,7 +60,7 @@ l30_end:
         DB      #80
 basic_loader_end:
 
-        SAVETRD "disk_A.trd","BOOT.B",basic_loader,basic_loader_end-basic_loader,10
+        SAVETRD "disk_A.trd","boot.B",basic_loader,basic_loader_end-basic_loader,10
 
         ORG     #6000
 p129_boot_image:
