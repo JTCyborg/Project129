@@ -325,7 +325,7 @@ void p129_c_entry(void)
                             if (result == 0u) {
                                 debug_puts("[MEM] PHYSICAL PAGE COPY / OVERLAP PASS\r\n");
                                 result = p129_bank_module_selftest();
-                                if (result == 0u) debug_puts("[BANK] MULTIPAGE MODULE IO / 64K BOUNDARY PASS\r\n");
+                                if (result == 0u) { debug_puts("[BANK] MULTIPAGE MODULE IO / 64K BOUNDARY PASS\r\n"); p129_bank_storage_ready = 1u; }
                                 else { debug_puts("[BANK] MULTIPAGE MODULE IO FAILED; TEST="); debug_hex8(result); debug_puts("\r\n"); }
                             } else {
                                 debug_puts("[MEM] PHYSICAL PAGE COPY FAILED; TEST=");
