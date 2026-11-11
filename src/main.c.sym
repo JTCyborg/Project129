@@ -1,0 +1,12 @@
+___str_0                        = $0000 ; addr, local, , , rodata_compiler, src/main.c:308
+___str_1                        = $001A ; addr, local, , , rodata_compiler, src/main.c:314
+___str_2                        = $0031 ; addr, local, , , rodata_compiler, src/main.c:320
+___str_3                        = $0051 ; addr, local, , , rodata_compiler, src/main.c:326
+___str_4                        = $006E ; addr, local, , , rodata_compiler, src/main.c:332
+___str_5                        = $0094 ; addr, local, , , rodata_compiler, src/main.c:338
+_debug_putc                     = $0000 ; addr, local, , , code_compiler, src/main.c:253
+_debug_puts                     = $0015 ; addr, local, , , code_compiler, src/main.c:265
+_main                           = $0027 ; addr, public, , , code_compiler, src/main.c:285
+_p129_debug_value               = $0000 ; addr, public, , , bss_compiler, src/main.c:221
+l_debug_puts_00101              = $0019 ; addr, local, , , code_compiler, src/main.c:270
+l_main_00103                    = $0052 ; addr, local, , , code_compiler, src/main.c:305
