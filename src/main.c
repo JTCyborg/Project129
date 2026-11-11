@@ -25,7 +25,7 @@ static void debug_puts(const char *text)
     }
 }
 
-void p129_main(void)
+void main(void)
 {
     debug_puts("[P129] Z88DK C ENTRY\r\n");
     debug_puts("[P129] BUILD: BOOTSTRAP-0.1.0\r\n");
