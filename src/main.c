@@ -21,6 +21,7 @@ extern void p129_hdd_list_root(void);
 extern uint8_t p129_range_selftest(void);
 extern uint8_t p129_keyboard_init(void);
 extern uint8_t p129_keyboard_poll(void);
+extern void p129_keyboard_delay_window(void);
 extern volatile uint8_t p129_keyboard_xt_active;
 extern volatile uint8_t p129_keyboard_lastscan;
 extern volatile uint8_t p129_keyboard_r2;
@@ -120,6 +121,7 @@ void p129_c_entry(void)
     uint8_t rtc_poll_phase;
     char last_second_tens;
     char last_second_ones;
+    uint8_t keyboard_idle_windows;
 
     p129_ui_ready = 0; /* --no-crt: explicitly initialize BSS state. */
     debug_puts("[P129] C IMAGE EXECUTED\r\n");
@@ -221,14 +223,13 @@ void p129_c_entry(void)
         debug_puts("[KBD] ZX FALLBACK\r\n");
     }
 
-    debug_puts("[P129] BOOTSTRAP IDLE\r\n");
+    debug_puts("[P129] KEYBOARD MONITOR\\r\\n");
+    keyboard_idle_windows = 20; /* Project127: 41 windows ~= 10 s; 20 ~= 5 s. */
 
-    rtc_poll_divider = 0;
-    rtc_poll_phase = 0;
-    last_second_tens = p129_rtc_second[0];
-    last_second_ones = p129_rtc_second[1];
+    /* Restart the inactivity window on every observed key transition. */
     for (;;) {
         if (p129_keyboard_poll()) {
+            keyboard_idle_windows = 20;
             if (p129_keyboard_xt_active) {
                 debug_puts("[KBD] LAST=");
                 debug_hex8(p129_keyboard_lastscan);
@@ -240,7 +241,7 @@ void p129_c_entry(void)
                 debug_hex8(p129_keyboard_r4);
                 debug_puts(" R5=");
                 debug_hex8(p129_keyboard_r5);
-                debug_puts("\r\n");
+                debug_puts("\\r\\n");
             } else {
                 uint8_t k;
                 debug_puts("[KBD] ZX MATRIX=");
@@ -248,9 +249,21 @@ void p129_c_entry(void)
                     debug_hex8(p129_keyboard_matrix[k]);
                     debug_putc(' ');
                 }
-                debug_puts("\r\n");
+                debug_puts("\\r\\n");
             }
         }
+        p129_keyboard_delay_window();
+        --keyboard_idle_windows;
+        if (keyboard_idle_windows == 0) break;
+    }
+    debug_puts("[KBD] DONE\\r\\n");
+    debug_puts("[P129] KEYBOARD COMPLETE; NEXT=SPEAKER\\r\\n");
+
+    rtc_poll_divider = 0;
+    rtc_poll_phase = 0;
+    last_second_tens = p129_rtc_second[0];
+    last_second_ones = p129_rtc_second[1];
+    for (;;) {
         if (!p129_rtc_available) continue;
         ++rtc_poll_divider;
         if (rtc_poll_divider == 0) {
